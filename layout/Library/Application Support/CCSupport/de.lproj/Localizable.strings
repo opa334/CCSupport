@@ -1,0 +1,14 @@
+"ConnectivityModule" = "Konnektivität";
+"MediaControlsModule" = "Wiedergabe";
+"DoNotDisturbModule" = "Nicht stören";
+"OrientationLockModule" = "Ausrichtungssperre";
+"AudioModule" = "Lautstärke";
+"DisplayModule" = "Helligkeit";
+"Screen Mirroring" = "Bildschirmsynchronisation";
+
+"RESET_MODULES" = "Steuerelemente zurücksetzen";
+"RESET_MODULES_DESCRIPTION" = "CCSupport leitet die Moduleinstellungen auf eine andere Datei um. Dadurch wird die Konfiguration wenn der Tweak geladen ist, von der, wenn der Tweak nicht geladen ist (bspw. im Safe Mode oder nach einem Neustart vor dem erneuten jailbreaken), getrennt. Welche Konfiguration soll zurückgesetzt werden?";
+"RESET_DEFAULT_CONFIGURATION" = "Standardkonfiguration zurücksetzen";
+"RESET_CCSUPPORT_CONFIGURATION" = "CCSupport Konfiguration zurücksetzen";
+"RESET_BOTH_CONFIGURATIONS" = "Beide Konfigurationen zurücksetzen";
+"CANCEL" = "Abbrechen";

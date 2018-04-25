@@ -1,0 +1,12 @@
+Package: com.opa334.ccsupport
+Name: CCSupport
+Depends: mobilesubstrate, firmware (>=11.0)
+Provides: com.ioscreatix.silo
+Replaces: com.ioscreatix.silo
+Conflicts: com.ioscreatix.silo
+Version: 1.0
+Architecture: iphoneos-arm
+Description: Support tweak for CC modules!
+Maintainer: opa334
+Author: opa334
+Section: Tweaks
