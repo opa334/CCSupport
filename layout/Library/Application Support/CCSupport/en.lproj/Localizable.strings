@@ -12,3 +12,7 @@
 "RESET_CCSUPPORT_CONFIGURATION" = "Reset CCSupport configuration";
 "RESET_BOTH_CONFIGURATIONS" = "Reset both configurations";
 "CANCEL" = "Cancel";
+
+"SAFETY_TITLE" = "Safety Warning";
+"SAFETY_MESSAGE" = "CCSupport was not loaded due to modifications done to your system files. Please undo any modifications or restore the affected files from an IPSW and try again.";
+"SAFETY_BUTTON" = "I understand";

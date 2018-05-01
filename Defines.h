@@ -1,11 +1,4 @@
-#define ConnectivityModuleIdentifier @"com.apple.control-center.ConnectivityModule"
-#define MediaControlsModuleIdentifier @"com.apple.mediaremote.controlcenter.nowplaying"
-#define DoNotDisturbModuleIdentifier @"com.apple.control-center.DoNotDisturbModule"
-#define OrientationLockModuleIdentifier @"com.apple.control-center.OrientationLockModule"
-#define AudioModuleIdentifier @"com.apple.control-center.AudioModule"
-#define DisplayModuleIdentifier @"com.apple.control-center.DisplayModule"
-#define ScreenMirroringModuleIdentifier @"com.apple.mediaremote.controlcenter.airplaymirroring"
-
 #define CCSupportBundlePath @"/Library/Application Support/CCSupport"
 #define DefaultModuleConfigurationPath @"/var/mobile/Library/ControlCenter/ModuleConfiguration.plist"
 #define CCSupportModuleConfigurationPath @"/var/mobile/Library/ControlCenter/ModuleConfiguration_CCSupport.plist"
+#define DefaultModuleOrderPath @"/System/Library/PrivateFrameworks/ControlCenterServices.framework/DefaultModuleOrder~%@.plist"

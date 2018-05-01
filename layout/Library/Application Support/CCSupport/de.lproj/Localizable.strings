@@ -12,3 +12,7 @@
 "RESET_CCSUPPORT_CONFIGURATION" = "CCSupport Konfiguration zurücksetzen";
 "RESET_BOTH_CONFIGURATIONS" = "Beide Konfigurationen zurücksetzen";
 "CANCEL" = "Abbrechen";
+
+"SAFETY_TITLE" = "Sicherheitswarnung";
+"SAFETY_MESSAGE" = "CCSupport wurde nicht geladen, da deine Systemdateien in einem modifiziertem Zustand sind. Bitte mache die Modifikationen rückgängig oder ersetze die betroffenen Dateien mit denen aus einer IPSW und versuche es erneut.";
+"SAFETY_BUTTON" = "Ich verstehe";

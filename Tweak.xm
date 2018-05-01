@@ -5,7 +5,7 @@
 CGImageRef (*LICreateIconForImage)(CGImageRef, int, int);
 
 //Identifiers of (normally) fixed modules
-NSArray* fixedModuleIdentifiers = @[ConnectivityModuleIdentifier, MediaControlsModuleIdentifier, DoNotDisturbModuleIdentifier, OrientationLockModuleIdentifier, AudioModuleIdentifier, DisplayModuleIdentifier, ScreenMirroringModuleIdentifier];
+NSArray* fixedModuleIdentifiers;
 
 //Bundle for icons and localization (only needed / initialized in settings)
 NSBundle* CCSupportBundle;
@@ -280,6 +280,43 @@ NSString* localize(NSString* key)
 %end
 %end
 
+%group safetyChecksFailed
+%hook SBHomeScreenViewController
+
+BOOL safetyAlertPresented = NO;
+
+- (void)viewDidAppear:(BOOL)arg1
+{
+  %orig;
+
+  //To prevent a safe mode crash (or worse things???) we error out, because the user has modified their system files
+  if(!safetyAlertPresented)
+  {
+    UIAlertController* safetyAlert = [UIAlertController alertControllerWithTitle:localize(@"SAFETY_TITLE") message:localize(@"SAFETY_MESSAGE") preferredStyle:UIAlertControllerStyleAlert];
+    [safetyAlert addAction:[UIAlertAction actionWithTitle:localize(@"SAFETY_BUTTON") style:UIAlertActionStyleDefault handler:nil]];
+
+    [self presentViewController:safetyAlert animated:YES completion:nil];
+
+    safetyAlertPresented = YES;
+  }
+}
+
+%end
+%end
+
+//Get fixed module identifiers from device specific plist (Return value: whether the plist was modified or not)
+BOOL loadFixedModuleIdentifiers()
+{
+  NSString* device = [[UIDevice.currentDevice.model componentsSeparatedByString:@" "].firstObject lowercaseString]; //will contain ipad, ipod or iphone
+  NSString* plistPath = [NSString stringWithFormat:DefaultModuleOrderPath, device];
+  NSDictionary* plist = [[NSDictionary alloc] initWithContentsOfFile:plistPath];
+
+  fixedModuleIdentifiers = [plist objectForKey:@"fixed"];
+
+  //If this array contains less than 7 objects, the plist was modified with no doubt
+  return ([fixedModuleIdentifiers count] < 7);
+}
+
 void initModuleRepositoryHooks()
 {
   %init(ModuleRepository);
@@ -317,15 +354,27 @@ static void classesLoaded(CFNotificationCenterRef center, void *observer, CFStri
   NSString* bundleIdentifier = [NSBundle mainBundle].bundleIdentifier;
   if([bundleIdentifier isEqualToString:@"com.apple.springboard"])
   {
-    initModuleRepositoryHooks();
-    initModuleSettingsProviderHooks();
+    CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
+
+    if(!loadFixedModuleIdentifiers())
+    {
+      initModuleRepositoryHooks();
+      initModuleSettingsProviderHooks();
+    }
+    else
+    {
+      %init(safetyChecksFailed);
+    }
   }
   else if([bundleIdentifier isEqualToString:@"com.apple.Preferences"])
   {
-    CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
-    CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, classesLoaded, (CFStringRef)NSBundleDidLoadNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
-  }
+    if(!loadFixedModuleIdentifiers())
+    {
+      CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
+      CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, classesLoaded, (CFStringRef)NSBundleDidLoadNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
 
-  //Do not try this at home
-  LICreateIconForImage = (CGImageRef (*)(CGImage*, int, int))MSFindSymbol(NULL, "_LICreateIconForImage");
+      //Do not try this at home
+      LICreateIconForImage = (CGImageRef (*)(CGImage*, int, int))MSFindSymbol(NULL, "_LICreateIconForImage");
+    }
+  }
 }

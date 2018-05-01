@@ -14,3 +14,6 @@
 @property(nonatomic) NSDictionary* fixedModuleIcons;
 - (void)_repopulateModuleData;
 @end
+
+@interface SBHomeScreenViewController : UIViewController
+@end
