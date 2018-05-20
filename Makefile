@@ -1,11 +1,12 @@
-export TARGET = iphone:clang:11.2:8.0
-export ARCHS = arm64 armv7
+export TARGET = iphone:clang:11.2:11.0
+export ARCHS = arm64
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = CCSupport
 CCSupport_CFLAGS = -fobjc-arc
 CCSupport_FILES = Tweak.xm
+CCSupport_PRIVATE_FRAMEWORKS = MobileIcons
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

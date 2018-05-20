@@ -1,14 +1,14 @@
 #import "CCSupport.h"
 #import "Defines.h"
 
-//Used to create stock looking icons (couldn't figure out how to properly link the framework)
-CGImageRef (*LICreateIconForImage)(CGImageRef, int, int);
-
 //Identifiers of (normally) fixed modules
 NSArray* fixedModuleIdentifiers;
 
 //Bundle for icons and localization (only needed / initialized in settings)
 NSBundle* CCSupportBundle;
+
+//English localizations for fallback
+NSDictionary* englishLocalizations;
 
 //Get localized string for given key
 NSString* localize(NSString* key)
@@ -17,27 +17,56 @@ NSString* localize(NSString* key)
 
   if([localizedString isEqualToString:@""])
   {
-    //Fallback to english
-    NSDictionary* engDict = [[NSDictionary alloc] initWithContentsOfFile:[CCSupportBundle pathForResource:@"Localizable" ofType:@"strings" inDirectory:@"en.lproj"]];
-    NSString* engString = [engDict objectForKey:key];
+    if(!englishLocalizations)
+    {
+      englishLocalizations = [NSDictionary dictionaryWithContentsOfFile:[CCSupportBundle pathForResource:@"Localizable" ofType:@"strings" inDirectory:@"en.lproj"]];
+    }
+
+    //If no localization was found, fallback to english
+    NSString* engString = [englishLocalizations objectForKey:key];
+
     if(engString)
     {
-      localizedString = engString;
+      return engString;
+    }
+    else
+    {
+      //If an english localization was not found, just return the key itself
+      return key;
     }
   }
 
   return localizedString;
 }
 
-%group ModuleRepository
+//Get fixed module identifiers from device specific plist (Return value: whether the plist was modified or not)
+BOOL loadFixedModuleIdentifiers()
+{
+  NSString* device = [[UIDevice.currentDevice.model componentsSeparatedByString:@" "].firstObject lowercaseString]; //will contain ipad, ipod or iphone
+  NSString* plistPath = [NSString stringWithFormat:DefaultModuleOrderPath, device];
+  NSDictionary* plist = [[NSDictionary alloc] initWithContentsOfFile:plistPath];
+
+  fixedModuleIdentifiers = [plist objectForKey:@"fixed"];
+
+  //If this array contains less than 7 objects, the plist was modified with no doubt
+  return ([fixedModuleIdentifiers count] < 7);
+}
+
+%group ControlCenterServices
 %hook CCSModuleRepository
 
 //Add path for third party bundles to directory urls
 + (NSArray<NSURL*>*)_defaultModuleDirectories
 {
   NSArray<NSURL*>* directories = %orig;
-  NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@""] isDirectory:YES];
-  return [directories arrayByAddingObject:thirdPartyURL];
+
+  if(directories)
+  {
+    NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@""] isDirectory:YES];
+    return [directories arrayByAddingObject:thirdPartyURL];
+  }
+
+  return directories;
 }
 
 //Enable non whitelisted modules to be loaded
@@ -48,9 +77,6 @@ NSString* localize(NSString* key)
 }
 
 %end
-%end
-
-%group ModuleSettingsProvider
 
 %hook CCSModuleSettingsProvider
 
@@ -61,21 +87,92 @@ NSString* localize(NSString* key)
 }
 
 //Return empty array for fixed modules
-+ (NSArray*)_defaultFixedModuleIdentifiers
++ (NSMutableArray*)_defaultFixedModuleIdentifiers
 {
-  return @[];
+  return [NSMutableArray array];
 }
 
 //Return fixed + non fixed modules
-+ (NSArray*)_defaultUserEnabledModuleIdentifiers
++ (NSMutableArray*)_defaultUserEnabledModuleIdentifiers
 {
-  return [fixedModuleIdentifiers arrayByAddingObjectsFromArray:%orig];
+  return [[fixedModuleIdentifiers arrayByAddingObjectsFromArray:%orig] mutableCopy];
 }
 
 %end
 %end
 
-%group ModulesController
+%group ControlCenterUI
+%hook CCUIModuleInstanceManager
+
+%new
+- (CCUIModuleInstance*)instanceForModuleIdentifier:(NSString*)moduleIdentifier
+{
+  NSMutableDictionary* moduleInstanceByIdentifier = MSHookIvar<NSMutableDictionary*>(self, "_moduleInstanceByIdentifier");
+
+  return [moduleInstanceByIdentifier objectForKey:moduleIdentifier];
+}
+
+%end
+
+%hook CCUIModuleSettingsManager
+
+//Load custom sizes from plist / from method
+- (CCUIModuleSettings*)moduleSettingsForModuleIdentifier:(NSString*)moduleIdentifier prototypeSize:(CCUILayoutSize)arg2
+{
+  CCUIModuleSettings* moduleSettings = %orig;
+
+  CCUIModuleInstance* moduleInstance = [[%c(CCUIModuleInstanceManager) sharedInstance] instanceForModuleIdentifier:moduleIdentifier];
+
+  NSDictionary* infoPlist = [NSDictionary dictionaryWithContentsOfURL:[moduleInstance.metadata.moduleBundleURL URLByAppendingPathComponent:@"Info.plist"]];
+  NSNumber* getSizeAtRuntime = [infoPlist objectForKey:@"CCSGetModuleSizeAtRuntime"];
+
+  if([getSizeAtRuntime boolValue])
+  {
+    if([moduleInstance.module respondsToSelector:@selector(moduleSizeForOrientation:)])
+    {
+      MSHookIvar<CCUILayoutSize>(moduleSettings, "_portraitLayoutSize") = [moduleInstance.module moduleSizeForOrientation:CCOrientationPortrait];
+      MSHookIvar<CCUILayoutSize>(moduleSettings, "_landscapeLayoutSize") = [moduleInstance.module moduleSizeForOrientation:CCOrientationLandscape];
+    }
+  }
+  else
+  {
+    NSDictionary* moduleSizeDict = [infoPlist objectForKey:@"CCSModuleSize"];
+
+    if(moduleSizeDict)
+    {
+      NSDictionary* moduleSizePortraitDict = [moduleSizeDict objectForKey:@"Portrait"];
+      NSDictionary* moduleSizeLandscapeDict = [moduleSizeDict objectForKey:@"Landscape"];
+
+      if(moduleSizePortraitDict && moduleSizeLandscapeDict)
+      {
+        NSNumber* portraitWidth = [moduleSizePortraitDict objectForKey:@"Width"];
+        NSNumber* portraitHeight = [moduleSizePortraitDict objectForKey:@"Height"];
+        NSNumber* landscapeWidth = [moduleSizeLandscapeDict objectForKey:@"Width"];
+        NSNumber* landscapeHeight = [moduleSizeLandscapeDict objectForKey:@"Height"];
+
+        if(portraitWidth && portraitHeight && landscapeWidth && landscapeHeight)
+        {
+          CCUILayoutSize moduleSizePortrait, moduleSizeLandscape;
+
+          moduleSizePortrait.width = [portraitWidth unsignedLongLongValue];
+          moduleSizePortrait.height = [portraitHeight unsignedLongLongValue];
+          moduleSizeLandscape.width = [landscapeWidth unsignedLongLongValue];
+          moduleSizeLandscape.height = [landscapeHeight unsignedLongLongValue];
+
+          MSHookIvar<CCUILayoutSize>(moduleSettings, "_portraitLayoutSize") = moduleSizePortrait;
+          MSHookIvar<CCUILayoutSize>(moduleSettings, "_landscapeLayoutSize") = moduleSizeLandscape;
+        }
+      }
+    }
+  }
+
+  return moduleSettings;
+}
+
+%end
+%end
+
+%group ControlCenterSettings
 %hook CCUISettingsModulesController
 
 %property(nonatomic, retain) NSDictionary *fixedModuleIcons;
@@ -289,11 +386,16 @@ BOOL safetyAlertPresented = NO;
 {
   %orig;
 
-  //To prevent a safe mode crash (or worse things???) we error out, because the user has modified their system files
+  //To prevent a safe mode crash (or worse things???) we error out because system files were modified by the user
   if(!safetyAlertPresented)
   {
     UIAlertController* safetyAlert = [UIAlertController alertControllerWithTitle:localize(@"SAFETY_TITLE") message:localize(@"SAFETY_MESSAGE") preferredStyle:UIAlertControllerStyleAlert];
-    [safetyAlert addAction:[UIAlertAction actionWithTitle:localize(@"SAFETY_BUTTON") style:UIAlertActionStyleDefault handler:nil]];
+
+    [safetyAlert addAction:[UIAlertAction actionWithTitle:localize(@"SAFETY_BUTTON_CLOSE") style:UIAlertActionStyleDefault handler:nil]];
+    [safetyAlert addAction:[UIAlertAction actionWithTitle:localize(@"SAFETY_BUTTON_OPEN") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
+    {
+      [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://www.reddit.com/r/jailbreak/comments/8k6v88/release_cccleaner_a_tool_to_restore_previously/"] options:@{} completionHandler:nil];
+    }]];
 
     [self presentViewController:safetyAlert animated:YES completion:nil];
 
@@ -304,77 +406,69 @@ BOOL safetyAlertPresented = NO;
 %end
 %end
 
-//Get fixed module identifiers from device specific plist (Return value: whether the plist was modified or not)
-BOOL loadFixedModuleIdentifiers()
+void initControlCenterUIHooks()
 {
-  NSString* device = [[UIDevice.currentDevice.model componentsSeparatedByString:@" "].firstObject lowercaseString]; //will contain ipad, ipod or iphone
-  NSString* plistPath = [NSString stringWithFormat:DefaultModuleOrderPath, device];
-  NSDictionary* plist = [[NSDictionary alloc] initWithContentsOfFile:plistPath];
-
-  fixedModuleIdentifiers = [plist objectForKey:@"fixed"];
-
-  //If this array contains less than 7 objects, the plist was modified with no doubt
-  return ([fixedModuleIdentifiers count] < 7);
+  %init(ControlCenterUI);
 }
 
-void initModuleRepositoryHooks()
+void initControlCenterServicesHooks()
 {
-  %init(ModuleRepository);
+  %init(ControlCenterServices);
 }
 
-void initModuleSettingsProviderHooks()
+void initControlCenterSettingsHooks()
 {
-  %init(ModuleSettingsProvider);
+  %init(ControlCenterSettings);
 }
 
-void initModulesControllerHooks()
+static void bundleLoaded(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
 {
-  %init(ModulesController);
-}
+  NSBundle* bundle = (__bridge NSBundle*)(object);
 
-//Credits to Silo: https://github.com/ioscreatix/Silo/blob/master/Tweak.xm
-static void classesLoaded(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
-{
-	if([((__bridge NSDictionary *)userInfo)[NSLoadedClasses] containsObject:@"CCSModuleRepository"])
+  if([bundle.bundleIdentifier isEqualToString:@"com.apple.ControlCenterServices"])
   {
-		initModuleRepositoryHooks();
-	}
-  if([((__bridge NSDictionary *)userInfo)[NSLoadedClasses] containsObject:@"CCSModuleSettingsProvider"])
+    initControlCenterServicesHooks();
+  }
+  else if([bundle.bundleIdentifier isEqualToString:@"com.apple.ControlCenterSettings"])
   {
-		initModuleSettingsProviderHooks();
-	}
-  if([((__bridge NSDictionary *)userInfo)[NSLoadedClasses] containsObject:@"CCUISettingsModulesController"])
-  {
-		initModulesControllerHooks();
-	}
+    initControlCenterSettingsHooks();
+  }
+}
+
+void reloadModuleSizes(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
+{
+  [[%c(CCUIModularControlCenterViewController) _sharedCollectionViewController] _refreshPositionProviders];
 }
 
 %ctor
 {
+  CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
   NSString* bundleIdentifier = [NSBundle mainBundle].bundleIdentifier;
-  if([bundleIdentifier isEqualToString:@"com.apple.springboard"])
-  {
-    CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
 
-    if(!loadFixedModuleIdentifiers())
+  BOOL isSpringBoard = [bundleIdentifier isEqualToString:@"com.apple.springboard"];
+
+  if(!loadFixedModuleIdentifiers())
+  {
+    if(isSpringBoard)
     {
-      initModuleRepositoryHooks();
-      initModuleSettingsProviderHooks();
+      initControlCenterUIHooks();
+      initControlCenterServicesHooks();
+
+      //Notification to reload sizes without respring
+      CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, reloadModuleSizes, CFSTR("com.opa334.ccsupport/ReloadSizes"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
     }
     else
     {
-      %init(safetyChecksFailed);
+      //Credits to Silo for this: https://github.com/ioscreatix/Silo/blob/master/Tweak.xm
+      //Register for bundle load notification, this allows us to initialize hooks for classes that are loaded from bundles at runtime
+      CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, bundleLoaded, (CFStringRef)NSBundleDidLoadNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
     }
   }
-  else if([bundleIdentifier isEqualToString:@"com.apple.Preferences"])
+  else
   {
-    if(!loadFixedModuleIdentifiers())
+    if(isSpringBoard)
     {
-      CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
-      CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, classesLoaded, (CFStringRef)NSBundleDidLoadNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
-
-      //Do not try this at home
-      LICreateIconForImage = (CGImageRef (*)(CGImage*, int, int))MSFindSymbol(NULL, "_LICreateIconForImage");
+      %init(safetyChecksFailed);
     }
   }
 }

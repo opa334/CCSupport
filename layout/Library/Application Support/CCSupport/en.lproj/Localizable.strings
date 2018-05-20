@@ -14,5 +14,6 @@
 "CANCEL" = "Cancel";
 
 "SAFETY_TITLE" = "Safety Warning";
-"SAFETY_MESSAGE" = "CCSupport was not loaded due to modifications done to your system files. Please undo any modifications or restore the affected files from an IPSW and try again.";
-"SAFETY_BUTTON" = "I understand";
+"SAFETY_MESSAGE" = "CCSupport was not loaded due to modifications done to your system files. I have developed an external tool called CCCleaner that is able to clean them up, click 'Open' to find out more.";
+"SAFETY_BUTTON_CLOSE" = "Close";
+"SAFETY_BUTTON_OPEN" = "Open";

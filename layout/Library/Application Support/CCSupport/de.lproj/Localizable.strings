@@ -14,5 +14,6 @@
 "CANCEL" = "Abbrechen";
 
 "SAFETY_TITLE" = "Sicherheitswarnung";
-"SAFETY_MESSAGE" = "CCSupport wurde nicht geladen, da deine Systemdateien in einem modifiziertem Zustand sind. Bitte mache die Modifikationen rückgängig oder ersetze die betroffenen Dateien mit denen aus einer IPSW und versuche es erneut.";
-"SAFETY_BUTTON" = "Ich verstehe";
+"SAFETY_MESSAGE" = "CCSupport wurde nicht geladen, da deine Systemdateien in einem modifiziertem Zustand sind. Ich habe ein externes Tool namens CCCleaner entwickelt, welches die betroffenen Systemdateien wiederherstellen kann. Wähle 'Öffnen' um mehr darüber herauszufinden.";
+"SAFETY_BUTTON_CLOSE" = "Schließen";
+"SAFETY_BUTTON_OPEN" = "Öffnen";
