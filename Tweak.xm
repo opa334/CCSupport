@@ -62,7 +62,7 @@ BOOL loadFixedModuleIdentifiers()
 
   if(directories)
   {
-    NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@""] isDirectory:YES];
+    NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@"/var/containers/Bundle/tweaksupport"] isDirectory:YES];
     return [directories arrayByAddingObject:thirdPartyURL];
   }
 
