@@ -1,0 +1,19 @@
+"ConnectivityModule" = "Conectividad";
+"MediaControlsModule" = "Controles de música";
+"DoNotDisturbModule" = "No molestar";
+"OrientationLockModule" = "Bloqueo de la orientación vertical";
+"AudioModule" = "Volumen";
+"DisplayModule" = "Brillo";
+"Screen Mirroring" = "Duplicar pantalla";
+
+"RESET_MODULES" = "Restablecer módulos";
+"RESET_MODULES_DESCRIPTION" = "CCSupport redirige el archivo de configuración del módulo a otra ruta. Por lo tanto, la configuración del módulo está separada entre cuando se carga el tweak y cuando no está cargado (por ejemplo, en modo seguro o cuando no está jailbroken). ¿Qué configuración de módulo quieres restablecer?";
+"RESET_DEFAULT_CONFIGURATION" = "Restablecer configuración predeterminada";
+"RESET_CCSUPPORT_CONFIGURATION" = "Restablecer la configuración de CCSupport";
+"RESET_BOTH_CONFIGURATIONS" = "Restablecer ambas configuraciones";
+"CANCEL" = "Cancelar";
+
+"SAFETY_TITLE" = "Advertencia de seguridad";
+"SAFETY_MESSAGE" = "CCSupport no se cargó debido a modificaciones hechas a sus archivos de sistema predeterminados. He desarrollado una herramienta externa llamada CCCleaner que puede limpiarlos, haga clic en 'Abrir' para obtener más información.";
+"SAFETY_BUTTON_CLOSE" = "Cerrar";
+"SAFETY_BUTTON_OPEN" = "Abrir";
