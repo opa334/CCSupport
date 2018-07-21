@@ -1,0 +1,19 @@
+"ConnectivityModule" = "接続関係";
+"MediaControlsModule" = "メディアコントロール";
+"DoNotDisturbModule" = "おやすみモード";
+"OrientationLockModule" = "画面固定";
+"AudioModule" = "音量";
+"DisplayModule" = "明るさ";
+"Screen Mirroring" = "ミラーリング";
+
+"RESET_MODULES" = "リセット";
+"RESET_MODULES_DESCRIPTION" = "CCSupportは、モジュール構成ファイルを別のパスにリダイレクトします。従ってモジュールの設定は、脱獄状態と入獄状態で別になります。どのモジュール構成をリセットしますか？";
+"RESET_DEFAULT_CONFIGURATION" = "入獄時設定をリセット";
+"RESET_CCSUPPORT_CONFIGURATION" = "脱獄時設定をリセット";
+"RESET_BOTH_CONFIGURATIONS" = "両方をリセット";
+"CANCEL" = "キャンセル";
+
+"SAFETY_TITLE" = "警告";
+"SAFETY_MESSAGE" = "システムファイルが改変されたため、CCSupportはロードされませんでした。CCCleanerを使用することでシステムファイルを元に戻すことができます。開くを押すと詳細情報が表示されます。";
+"SAFETY_BUTTON_CLOSE" = "閉じる";
+"SAFETY_BUTTON_OPEN" = "開く";
