@@ -1,0 +1,19 @@
+"ConnectivityModule" = "Mobiel Netwerk";
+"MediaControlsModule" = "Mediaknoppen";
+"DoNotDisturbModule" = "Niet Storen";
+"OrientationLockModule" = "Rotatievergrendeling";
+"AudioModule" = "Volume";
+"DisplayModule" = "Helderheid";
+"Screen Mirroring" = "Scherm Spiegelen";
+
+"RESET_MODULES" = "Stel Module Opnieuw In";
+"RESET_MODULES_DESCRIPTION" = "CCSupport zet de module configuratie folder over naar een ander pad. Daarom wordt de configuratie module gesplitst tussen wanneer de tweak geladen is en wanneer die niet geladen is (bijvoorbeeld in de veilige modus of wanneer het apparaat niet gejailbreakt is). Welke module configuratie wilt u resetten?";
+"RESET_DEFAULT_CONFIGURATION" = "Stel de standaard configuratie opnieuw in";
+"RESET_CCSUPPORT_CONFIGURATION" = "Stel de CCSupport configuratie opnieuw in";
+"RESET_BOTH_CONFIGURATIONS" = "Stel beide configuraties opnieuw in";
+"CANCEL" = "Annuleer";
+
+"SAFETY_TITLE" = "Veiligheidswaarschuwing";
+"SAFETY_MESSAGE" = "CCSupport was niet geladen door modificaties die gemaakt zijn in uw systeem folders. Ik heb een externe tool ontwikkeld genaamd: ''CCCleaner'' die er toe in staat is om ze op te ruimen, klik op 'Open' voor meer informatie.";
+"SAFETY_BUTTON_CLOSE" = "Sluit";
+"SAFETY_BUTTON_OPEN" = "Open";
