@@ -1,0 +1,19 @@
+"ConnectivityModule" = "Kesambungan";
+"MediaControlsModule" = "Kawalan Media";
+"DoNotDisturbModule" = "Jangan ganggu";
+"OrientationLockModule" = "Kunci Orientasi";
+"AudioModule" = "Kelantangan";
+"DisplayModule" = "Kecerahan";
+"Screen Mirroring" = "Cermin Skrin";
+
+"RESET_MODULES" = "Reset Modul";
+"RESET_MODULES_DESCRIPTION" = "CCSupport mengalihkan fail konfigurasi modul ke laluan lain. Oleh itu konfigurasi antara modul dipisahkan apabila tweak dimuatkan dan apabila ia tidak dimuatkan (contohnya dalam mod selamat atau ketika mod tidak jailbreak). Konfigurasi modul mana yang anda ingin reset?";
+"RESET_DEFAULT_CONFIGURATION" = "Tetapkan semula kepada konfigurasi lalai";
+"RESET_CCSUPPORT_CONFIGURATION" = "Tetapkan semula konfigurasi CCSupport";
+"RESET_BOTH_CONFIGURATIONS" = "Tetapkan semula kedua-dua konfigurasi";
+"CANCEL" = "Batalkan";
+
+"SAFETY_TITLE" = "Amaran Keselamatan";
+"SAFETY_MESSAGE" = "CCSupport tidak dimuatkan disebabkan anda melakukan pengubahsuaian pada fail sistem. Saya telah membangunkan alat luaran yang dipanggil CCCleaner yang dapat membersihkannya, klik 'Buka' untuk mengetahui lebih lanjut.";
+"SAFETY_BUTTON_CLOSE" = "Tutup";
+"SAFETY_BUTTON_OPEN" = "Buka";
