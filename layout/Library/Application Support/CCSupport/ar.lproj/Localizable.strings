@@ -1,0 +1,21 @@
+"ConnectivityModule" = "موصلية";
+"MediaControlsModule" = "التحكم بالصوتيات والمرئيات";
+"DoNotDisturbModule" = "الرجاء عدم الازعاج";
+"OrientationLockModule" = "قفل تدوير الشاشه";
+"AudioModule" = "الصوت";
+"DisplayModule" = "السطوع";
+"Screen Mirroring" = "عكس الشاشة";
+
+"RESET_MODULES" = "اعادة قيمة الوحدة لصفر";
+"RESET_MODULES_DESCRIPTION" = "يقوم دعم مركز التحكم بإعادة توجيه ملف تكوين الوحدة إلى مسار آخر. لذلك يتم فصل تكوين الوحدة النمطية بين وقت تحميل القرص وعندما لا يتم تحميله (على سبيل المثال في الوضع الآمن أو عندما لا يتم إلغاء وضع jailbroken). ما هي وحدة التكوين التي تريد إعادة تعيينها?";
+"RESET_DEFAULT_CONFIGURATION" = "إعادة تعيين التكوين الافتراضي";
+"RESET_CCSUPPORT_CONFIGURATION" = "إعادة ضبط تهيئة دعم مركز التحكم";
+"RESET_BOTH_CONFIGURATIONS" = "إعادة تعيين كل من التكوينات";
+"CANCEL" = "الغاء";
+
+"SAFETY_TITLE" = "تنبيه السلامه";
+"SAFETY_MESSAGE" = "لم يتم تحميل(دعم مركز التحكم) بسبب التعديلات التي أجريت على ملفات النظام لديك. لقد قمت بتطوير أداة خارجية تسمى CCCleaner قادرة على تنظيفها ، انقر فوق 'فتح' لمعرفة المزيد.";
+"SAFETY_BUTTON_CLOSE" = "اغلاق";
+"SAFETY_BUTTON_OPEN" = "فتح";
+
+/* 
