@@ -62,7 +62,11 @@ BOOL loadFixedModuleIdentifiers()
 
   if(directories)
   {
+    #ifdef ROOTLESS
+    NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@"/var/mobile"] isDirectory:YES];
+    #else
     NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@""] isDirectory:YES];
+    #endif
     return [directories arrayByAddingObject:thirdPartyURL];
   }
 
