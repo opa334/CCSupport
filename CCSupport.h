@@ -18,9 +18,14 @@ enum
 + (NSArray*)_defaultFixedModuleIdentifiers;
 @end
 
+@interface CCSModuleMetadata : NSObject
+@property (nonatomic,copy,readonly) NSURL* moduleBundleURL;
+@end
+
 @interface CCSModuleRepository : NSObject
 @property (assign,nonatomic) bool ignoreWhitelist;
 - (void)_updateAllModuleMetadata;
+- (CCSModuleMetadata*)moduleMetadataForModuleIdentifier:(id)arg1;
 @end
 
 @interface CCUISettingsModuleDescription : NSObject
@@ -29,14 +34,12 @@ enum
 
 @interface CCUISettingsModulesController : UITableViewController
 @property(nonatomic) NSDictionary* fixedModuleIcons; //NEW
+@property(nonatomic, retain) NSDictionary* preferenceClassForModuleIdentifiers; //NEW
 - (void)_repopulateModuleData;
+- (id)_identifierAtIndexPath:(id)arg1;
 @end
 
 @interface CCUIModuleSettings : NSObject
-@end
-
-@interface CCSModuleMetadata : NSObject
-@property (nonatomic,copy,readonly) NSURL* moduleBundleURL;
 @end
 
 @interface CCUIModuleInstance : NSObject

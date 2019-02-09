@@ -11,7 +11,7 @@ ifeq ($(ROOTLESS), 1)
 	CCSupport_CFLAGS += -fobjc-arc -D ROOTLESS=1
 endif
 CCSupport_FILES = Tweak.xm
-CCSupport_PRIVATE_FRAMEWORKS = MobileIcons
+CCSupport_PRIVATE_FRAMEWORKS = MobileIcons Preferences
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
