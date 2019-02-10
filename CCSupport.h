@@ -28,6 +28,10 @@ enum
 - (CCSModuleMetadata*)moduleMetadataForModuleIdentifier:(id)arg1;
 @end
 
+@interface CCSModuleSettingsProvider : NSObject
++ (NSMutableArray*)_defaultFixedModuleIdentifiers;
+@end
+
 @interface CCUISettingsModuleDescription : NSObject
 @property(readonly, copy, nonatomic) NSString *displayName;
 @end

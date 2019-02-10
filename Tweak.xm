@@ -3,14 +3,10 @@
 
 #import <Preferences/PSListController.h>
 
-//Identifiers of (normally) fixed modules
-NSArray* fixedModuleIdentifiers;
-
-//Bundle for icons and localization (only needed / initialized in settings)
-NSBundle* CCSupportBundle;
-
-//English localizations for fallback
-NSDictionary* englishLocalizations;
+NSArray* fixedModuleIdentifiers; //Identifiers of (normally) fixed modules
+NSBundle* CCSupportBundle; //Bundle for icons and localization (only needed / initialized in settings)
+NSDictionary* englishLocalizations; //English localizations for fallback
+BOOL isSpringBoard; //Are we SpringBoard???
 
 //Get localized string for given key
 NSString* localize(NSString* key)
@@ -44,13 +40,14 @@ NSString* localize(NSString* key)
 //Get fixed module identifiers from device specific plist (Return value: whether the plist was modified or not)
 BOOL loadFixedModuleIdentifiers()
 {
-  NSString* device = [[UIDevice.currentDevice.model componentsSeparatedByString:@" "].firstObject lowercaseString]; //will contain ipad, ipod or iphone
-  NSString* plistPath = [NSString stringWithFormat:DefaultModuleOrderPath, device];
-  NSDictionary* plist = [[NSDictionary alloc] initWithContentsOfFile:plistPath];
+  static dispatch_once_t onceToken;
+  dispatch_once (&onceToken,
+  ^{
+    //This method is called before the hook of it is initialized, that's why we can get the actual fixed identifiers here
+    fixedModuleIdentifiers = [%c(CCSModuleSettingsProvider) _defaultFixedModuleIdentifiers];
+  });
 
-  fixedModuleIdentifiers = [plist objectForKey:@"fixed"];
-
-  //If this array contains less than 7 objects, the plist was modified with no doubt
+  //If this array contains less than 7 objects, something was modified with no doubt
   return ([fixedModuleIdentifiers count] < 7);
 }
 
@@ -65,7 +62,7 @@ BOOL loadFixedModuleIdentifiers()
   if(directories)
   {
     #ifdef ROOTLESS
-    NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@"/var/mobile"] isDirectory:YES];
+    NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System/Library" withString:@"/var/LIB"] isDirectory:YES];
     #else
     NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@""] isDirectory:YES];
     #endif
@@ -77,7 +74,14 @@ BOOL loadFixedModuleIdentifiers()
 }
 
 //Enable non whitelisted modules to be loaded
-- (void)_updateAllModuleMetadata
+
+- (void)_queue_updateAllModuleMetadata //iOS 12
+{
+  MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+  %orig;
+}
+
+- (void)_updateAllModuleMetadata //iOS 11
 {
   MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
   %orig;
@@ -484,6 +488,11 @@ BOOL safetyAlertPresented = NO;
 %end
 %end
 
+void reloadModuleSizes(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
+{
+  [[%c(CCUIModularControlCenterViewController) _sharedCollectionViewController] _refreshPositionProviders];
+}
+
 void initControlCenterUIHooks()
 {
   %init(ControlCenterUI);
@@ -491,11 +500,25 @@ void initControlCenterUIHooks()
 
 void initControlCenterServicesHooks()
 {
+  if(!isSpringBoard)
+  {
+    if(loadFixedModuleIdentifiers())
+    {
+      return;
+    }
+  }
   %init(ControlCenterServices);
 }
 
 void initControlCenterSettingsHooks()
 {
+  if(!isSpringBoard)
+  {
+    if(loadFixedModuleIdentifiers())
+    {
+      return;
+    }
+  }
   %init(ControlCenterSettings);
 }
 
@@ -513,21 +536,14 @@ static void bundleLoaded(CFNotificationCenterRef center, void *observer, CFStrin
   }
 }
 
-void reloadModuleSizes(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
-{
-  [[%c(CCUIModularControlCenterViewController) _sharedCollectionViewController] _refreshPositionProviders];
-}
-
 %ctor
 {
   CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
-  NSString* bundleIdentifier = [NSBundle mainBundle].bundleIdentifier;
+  isSpringBoard = [[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"];
 
-  BOOL isSpringBoard = [bundleIdentifier isEqualToString:@"com.apple.springboard"];
-
-  if(!loadFixedModuleIdentifiers())
+  if(isSpringBoard)
   {
-    if(isSpringBoard)
+    if(!loadFixedModuleIdentifiers())
     {
       initControlCenterUIHooks();
       initControlCenterServicesHooks();
@@ -535,18 +551,15 @@ void reloadModuleSizes(CFNotificationCenterRef center, void *observer, CFStringR
       //Notification to reload sizes without respring
       CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, reloadModuleSizes, CFSTR("com.opa334.ccsupport/ReloadSizes"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
     }
-    else
+    else //Safety checks failed
     {
-      //Credits to Silo for this: https://github.com/ioscreatix/Silo/blob/master/Tweak.xm
-      //Register for bundle load notification, this allows us to initialize hooks for classes that are loaded from bundles at runtime
-      CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, bundleLoaded, (CFStringRef)NSBundleDidLoadNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
+      %init(safetyChecksFailed);
     }
   }
   else
   {
-    if(isSpringBoard)
-    {
-      %init(safetyChecksFailed);
-    }
+    //Credits to Silo for this: https://github.com/ioscreatix/Silo/blob/master/Tweak.xm
+    //Register for bundle load notification, this allows us to initialize hooks for classes that are loaded from bundles at runtime
+    CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, bundleLoaded, (CFStringRef)NSBundleDidLoadNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
   }
 }
