@@ -17,3 +17,4 @@
 "SAFETY_MESSAGE" = "CCSupport was niet geladen door modificaties die gemaakt zijn in uw systeem folders. Ik heb een externe tool ontwikkeld genaamd: ''CCCleaner'' die er toe in staat is om ze op te ruimen, klik op 'Open' voor meer informatie.";
 "SAFETY_BUTTON_CLOSE" = "Sluit";
 "SAFETY_BUTTON_OPEN" = "Open";
+

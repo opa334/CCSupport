@@ -17,3 +17,4 @@
 "SAFETY_MESSAGE" = "CCSupport no se cargó debido a modificaciones hechas a sus archivos de sistema predeterminados. He desarrollado una herramienta externa llamada CCCleaner que puede limpiarlos, haga clic en 'Abrir' para obtener más información.";
 "SAFETY_BUTTON_CLOSE" = "Cerrar";
 "SAFETY_BUTTON_OPEN" = "Abrir";
+

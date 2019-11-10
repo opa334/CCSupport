@@ -1,0 +1,10 @@
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/ar.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/de.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/es.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/fr.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/it.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/ja.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/ms.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/nl.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/zh-Hans.lproj/Localizable.strings -r
+localisort -t ./layout/Library/Application\ Support/CCSupport/en.lproj/Localizable.strings -i ./layout/Library/Application\ Support/CCSupport/zh-Hant.lproj/Localizable.strings -r

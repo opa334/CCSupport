@@ -17,3 +17,4 @@
 "SAFETY_MESSAGE" = "システムファイルが改変されたため、CCSupportはロードされませんでした。CCCleanerを使用することでシステムファイルを元に戻すことができます。開くを押すと詳細情報が表示されます。";
 "SAFETY_BUTTON_CLOSE" = "閉じる";
 "SAFETY_BUTTON_OPEN" = "開く";
+

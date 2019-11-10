@@ -11,6 +11,11 @@ BOOL isSpringBoard;	//Are we SpringBoard???
 //Get localized string for given key
 NSString* localize(NSString* key)
 {
+	if([key isEqualToString:@"MediaControlsAudioModule"]) //Fix Volume name on 13 and above
+	{
+		key = @"AudioModule";
+	}
+	
 	NSString* localizedString = [CCSupportBundle localizedStringForKey:key value:@"" table:nil];
 
 	if([localizedString isEqualToString:@""])
@@ -42,7 +47,7 @@ BOOL loadFixedModuleIdentifiers()
 {
 	static dispatch_once_t onceToken;
 	dispatch_once (&onceToken,
-		       ^{
+	^{
 		//This method is called before the hook of it is initialized, that's why we can get the actual fixed identifiers here
 		fixedModuleIdentifiers = [%c(CCSModuleSettingsProvider) _defaultFixedModuleIdentifiers];
 	});
@@ -214,7 +219,19 @@ BOOL loadFixedModuleIdentifiers()
 
 		for(NSString* moduleIdentifier in fixedModuleIdentifiers)
 		{
-			UIImage* moduleIcon = [UIImage imageNamed:moduleIdentifier inBundle:CCSupportBundle compatibleWithTraitCollection:nil];
+			NSString* imageIdentifier = moduleIdentifier;
+
+			if([imageIdentifier isEqualToString:@"com.apple.donotdisturb.DoNotDisturbModule"]) //Fix DND icon on 12 and above
+			{
+				imageIdentifier = @"com.apple.control-center.DoNotDisturbModule";
+			}
+			else if([imageIdentifier isEqualToString:@"com.apple.mediaremote.controlcenter.audio"]) //Fix Volume Icon on 13 and above
+			{
+				imageIdentifier = @"com.apple.control-center.AudioModule";
+			}
+
+			UIImage* moduleIcon = [UIImage imageNamed:imageIdentifier inBundle:CCSupportBundle compatibleWithTraitCollection:nil];
+			
 			if(moduleIcon)
 			{
 				[fixedModuleIcons setObject:moduleIcon forKey:moduleIdentifier];

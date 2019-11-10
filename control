@@ -4,7 +4,7 @@ Depends: mobilesubstrate, firmware (>=11.0)
 Provides: com.ioscreatix.silo
 Replaces: com.ioscreatix.silo
 Conflicts: com.ioscreatix.silo
-Version: 1.2.1
+Version: 1.2.2
 Architecture: iphoneos-arm
 Description: Support tweak for CC modules!
 Maintainer: opa334
