@@ -1,4 +1,4 @@
-export TARGET = iphone:clang:12.1.2:11.0
+export TARGET = iphone:clang:13.0:11.0
 export ARCHS = arm64 arm64e
 
 export ROOTLESS ?= 0;
