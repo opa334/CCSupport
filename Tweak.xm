@@ -2,6 +2,7 @@
 #import "Defines.h"
 
 #import <Preferences/PSListController.h>
+#import <Preferences/PSSpecifier.h>
 
 NSArray* fixedModuleIdentifiers;//Identifiers of (normally) fixed modules
 NSBundle* CCSupportBundle;	//Bundle for icons and localization (only needed / initialized in settings)
@@ -80,15 +81,28 @@ BOOL loadFixedModuleIdentifiers()
 
 //Enable non whitelisted modules to be loaded
 
-- (void)_queue_updateAllModuleMetadata	//iOS 12
+- (void)_queue_updateAllModuleMetadata	//iOS 12 up
 {
-	MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_14_0)
+	{
+		MSHookIvar<BOOL>(self, "_ignoreAllowedList") = YES;
+	}
+	else
+	{
+		MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+	}
+
+	
 	%orig;
 }
 
-- (void)_updateAllModuleMetadata//iOS 11
+- (void)_updateAllModuleMetadata //iOS 11
 {
-	MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+	if(kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_12_0)
+	{
+		MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+	}
+
 	%orig;
 }
 
@@ -190,22 +204,10 @@ BOOL loadFixedModuleIdentifiers()
 %end
 
 %group ControlCenterSettings
-%hook CCUISettingsModulesController
 
-//Unselect module
-- (void)viewDidAppear:(BOOL)animated
-{
-	%orig;
+#define eccSelf ((id<SettingsControllerSharedAcrossVersions>)self)
 
-	UITableViewController* tableViewController = MSHookIvar<UITableViewController*>(self, "_tableViewController");
-
-	NSIndexPath* selectedRow = [tableViewController.tableView indexPathForSelectedRow];
-
-	if(selectedRow)
-	{
-		[tableViewController.tableView deselectRowAtIndexPath:selectedRow animated:YES];
-	}
-}
+%hook SettingsControllerSharedAcrossVersions //iOS 11-14
 
 %property (nonatomic, retain) NSDictionary *fixedModuleIcons;
 %property (nonatomic, retain) NSDictionary *preferenceClassForModuleIdentifiers;
@@ -213,7 +215,7 @@ BOOL loadFixedModuleIdentifiers()
 //Load icons for normally fixed modules and determine which modules have preferences
 - (void)_repopulateModuleData
 {
-	if(!self.fixedModuleIcons)
+	if(!eccSelf.fixedModuleIcons)
 	{
 		NSMutableDictionary* fixedModuleIcons = [NSMutableDictionary new];
 
@@ -238,7 +240,7 @@ BOOL loadFixedModuleIdentifiers()
 			}
 		}
 
-		self.fixedModuleIcons = [fixedModuleIcons copy];
+		eccSelf.fixedModuleIcons = [fixedModuleIcons copy];
 	}
 
 	%orig;
@@ -266,13 +268,13 @@ BOOL loadFixedModuleIdentifiers()
 		}
 	}
 
-	self.preferenceClassForModuleIdentifiers = [preferenceClassForModuleIdentifiersM copy];
+	eccSelf.preferenceClassForModuleIdentifiers = [preferenceClassForModuleIdentifiersM copy];
 }
 
 //Replace blank icons with icons loaded above
 - (UIImage*)_iconForBundle:(NSBundle*)bundle
 {
-	UIImage* fixedModuleIcon = [self.fixedModuleIcons objectForKey:bundle.bundleIdentifier];
+	UIImage* fixedModuleIcon = [eccSelf.fixedModuleIcons objectForKey:bundle.bundleIdentifier];
 	if(fixedModuleIcon)
 	{
 		//Mimic how the original implementation creates the icon
@@ -312,6 +314,25 @@ BOOL loadFixedModuleIdentifiers()
 	}
 
 	return moduleDescription;
+}
+
+%end
+
+%hook CCUISettingsModulesController //iOS 11-13
+
+//Unselect module
+- (void)viewDidAppear:(BOOL)animated
+{
+	%orig;
+
+	UITableViewController* tableViewController = MSHookIvar<UITableViewController*>(self, "_tableViewController");
+
+	NSIndexPath* selectedRow = [tableViewController.tableView indexPathForSelectedRow];
+
+	if(selectedRow)
+	{
+		[tableViewController.tableView deselectRowAtIndexPath:selectedRow animated:YES];
+	}
 }
 
 //Add section for reset button to table view
@@ -417,21 +438,24 @@ BOOL loadFixedModuleIdentifiers()
 		NSString* moduleIdentifier = [self _identifierAtIndexPath:indexPath];
 		NSString* rootListControllerClassName = [self.preferenceClassForModuleIdentifiers objectForKey:moduleIdentifier];
 
-		CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
-		NSBundle* moduleBundle = [NSBundle bundleWithURL:[moduleRepository moduleMetadataForModuleIdentifier:moduleIdentifier].moduleBundleURL];
-
-		Class rootListControllerClass = NSClassFromString(rootListControllerClassName);
-
-		if(!rootListControllerClass)
+		if(rootListControllerClassName)
 		{
-			[moduleBundle load];
-			rootListControllerClass = NSClassFromString(rootListControllerClassName);
-		}
+			CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+			NSBundle* moduleBundle = [NSBundle bundleWithURL:[moduleRepository moduleMetadataForModuleIdentifier:moduleIdentifier].moduleBundleURL];
 
-		if(rootListControllerClass)
-		{
-			PSListController* listController = [[rootListControllerClass alloc] init];
-			[self.navigationController pushViewController:listController animated:YES];
+			Class rootListControllerClass = NSClassFromString(rootListControllerClassName);
+
+			if(!rootListControllerClass)
+			{
+				[moduleBundle load];
+				rootListControllerClass = NSClassFromString(rootListControllerClassName);
+			}
+
+			if(rootListControllerClass)
+			{
+				PSListController* listController = [[rootListControllerClass alloc] init];
+				[self.navigationController pushViewController:listController animated:YES];
+			}
 		}
 	}
 }
@@ -479,6 +503,127 @@ BOOL loadFixedModuleIdentifiers()
 }
 
 %end
+
+%hook CCUISettingsListController
+
+/*- (NSMutableArray*)specifiers
+{
+	BOOL startingFresh = [self valueForKey:@"_specfiers"] == nil;
+
+	NSMutableArray* specifiers = %orig;
+
+	if(startingFresh)
+	{
+
+	}
+}*/
+
+- (NSMutableArray*)_specifiersForIdentifiers:(NSArray*)identifiers
+{
+	NSMutableArray* specifiers = %orig;
+
+	NSUInteger identifiersCount = identifiers.count;
+
+	for(PSSpecifier* specifier in specifiers)
+	{
+		NSInteger index = [specifiers indexOfObject:specifier];
+		if(index >= identifiersCount)
+		{
+			NSLog(@"shouldn't happen but better safe than sorry");
+			break;
+		}
+
+		NSString* moduleIdentifier = [identifiers objectAtIndex:index];
+
+		if([fixedModuleIdentifiers containsObject:moduleIdentifier])
+		{
+			specifier.name = localize(specifier.name);
+		}
+
+		NSString* rootListControllerClassName = [self.preferenceClassForModuleIdentifiers objectForKey:moduleIdentifier];
+
+		if(rootListControllerClassName)
+		{
+			Class rootListControllerClass = NSClassFromString(rootListControllerClassName);
+
+			if(!rootListControllerClass)
+			{
+				CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+				NSBundle* moduleBundle = [NSBundle bundleWithURL:[moduleRepository moduleMetadataForModuleIdentifier:moduleIdentifier].moduleBundleURL];
+				[moduleBundle load];
+				rootListControllerClass = NSClassFromString(rootListControllerClassName);
+			}
+
+			if(rootListControllerClass)
+			{
+				specifier.cellType = PSLinkListCell;
+				specifier.detailControllerClass = rootListControllerClass;
+
+				[specifier setProperty:NSStringFromClass(rootListControllerClass) forKey:@"detail"];
+				[specifier setProperty:@YES forKey:@"enabled"];
+				[specifier setProperty:@YES forKey:@"isController"];
+
+				/*PSSpecifier* newSpecifier = [PSSpecifier preferenceSpecifierNamed:specifier.name
+						  target:self
+						  set:nil
+						  get:nil
+						  detail:rootListControllerClass
+						  cell:PSLinkListCell
+						  edit:nil];
+				
+				[newSpecifier setProperty:@YES forKey:@"enabled"];
+				newSpecifier.detailControllerClass = rootListControllerClass;
+
+				[specifiers replaceObjectAtIndex:index withObject:newSpecifier];*/
+			}
+		}		
+	}
+
+	return specifiers;
+}
+
+//Make everything except reset button and modules with preference pages not clickable
+%new
+- (NSIndexPath *)tableView:(UITableView*)tableView willSelectRowAtIndexPath:(NSIndexPath*)indexPath
+{
+	NSString* moduleIdentifier = [self _identifierAtIndexPath:indexPath];
+
+	if(/*indexPath.section == 2 || */[self.preferenceClassForModuleIdentifiers objectForKey:moduleIdentifier])
+	{
+		return indexPath;
+	}
+	else
+	{
+		return nil;
+	}
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	UITableViewCell* cell = %orig;
+	NSString* moduleIdentifier = [self _identifierAtIndexPath:indexPath];
+	
+	if([self.preferenceClassForModuleIdentifiers objectForKey:moduleIdentifier])
+	{
+		cell.editingAccessoryType = UITableViewCellAccessoryDisclosureIndicator;
+	}
+	else
+	{
+		cell.editingAccessoryType = UITableViewCellAccessoryNone;
+	}
+
+	return cell;
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+	tableView.allowsSelectionDuringEditing = YES;
+	[tableView setEditing:NO animated:NO];
+	return %orig;
+}
+
+%end
+
 %end
 
 %group safetyChecksFailed
@@ -541,7 +686,19 @@ void initControlCenterSettingsHooks()
 			return;
 		}
 	}
-	%init(ControlCenterSettings);
+
+	Class settingsControllerClass;
+
+	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_14_0)
+	{
+		settingsControllerClass = NSClassFromString(@"CCUISettingsListController");
+	}
+	else
+	{
+		settingsControllerClass = NSClassFromString(@"CCUISettingsModulesController");
+	}
+
+	%init(ControlCenterSettings, SettingsControllerSharedAcrossVersions=settingsControllerClass);
 }
 
 static void bundleLoaded(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
