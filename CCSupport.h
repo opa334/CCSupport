@@ -48,6 +48,9 @@ enum
 @property(nonatomic, retain) NSDictionary* preferenceClassForModuleIdentifiers; //NEW
 - (void)_repopulateModuleData;
 - (id)_identifierAtIndexPath:(id)arg1;
+- (UITableView*)ccs_getTableView;
+- (void)ccs_unselectSelectedRow;
+- (void)ccs_resetButtonPressed;
 @end
 
 @interface CCUISettingsModulesController : UITableViewController <SettingsControllerSharedAcrossVersions>

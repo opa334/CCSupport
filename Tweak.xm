@@ -203,9 +203,9 @@ BOOL loadFixedModuleIdentifiers()
 %end
 %end
 
-%group ControlCenterSettings
+%group ControlCenterSettings_Shared
 
-#define eccSelf ((id<SettingsControllerSharedAcrossVersions>)self)
+#define eccSelf ((UIViewController<SettingsControllerSharedAcrossVersions>*)self)
 
 %hook SettingsControllerSharedAcrossVersions //iOS 11-14
 
@@ -316,7 +316,81 @@ BOOL loadFixedModuleIdentifiers()
 	return moduleDescription;
 }
 
+%new
+- (UITableView*)ccs_getTableView
+{
+	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_14_0)
+	{
+		return MSHookIvar<UITableView*>(self, "_table");
+	}
+	else
+	{
+		UITableViewController* tableViewController = MSHookIvar<UITableViewController*>(self, "_tableViewController");
+		return tableViewController.tableView;
+	}
+}
+
+%new
+- (void)ccs_unselectSelectedRow
+{
+	UITableView* tableView = [self ccs_getTableView];
+
+	NSIndexPath* selectedRow = [tableView indexPathForSelectedRow];
+
+	if(selectedRow)
+	{
+		[tableView deselectRowAtIndexPath:selectedRow animated:YES];
+	}
+}
+
+%new
+- (void)ccs_resetButtonPressed
+{
+	UITableView* tableView = [eccSelf ccs_getTableView];
+
+	UIAlertController* resetAlert = [UIAlertController alertControllerWithTitle:localize(@"RESET_MODULES") message:localize(@"RESET_MODULES_DESCRIPTION") preferredStyle:UIAlertControllerStyleAlert];
+
+	[resetAlert addAction:[UIAlertAction actionWithTitle:localize(@"RESET_DEFAULT_CONFIGURATION") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
+	{
+		[[NSFileManager defaultManager] removeItemAtPath:DefaultModuleConfigurationPath error:nil];
+		[self ccs_unselectSelectedRow];
+	}]];
+
+	[resetAlert addAction:[UIAlertAction actionWithTitle:localize(@"RESET_CCSUPPORT_CONFIGURATION") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
+	{
+		[[NSFileManager defaultManager] removeItemAtPath:CCSupportModuleConfigurationPath error:nil];
+
+		//Reload CCSupport configuration
+		[eccSelf _repopulateModuleData];
+		[tableView reloadData];
+
+		[self ccs_unselectSelectedRow];
+	}]];
+
+	[resetAlert addAction:[UIAlertAction actionWithTitle:localize(@"RESET_BOTH_CONFIGURATIONS") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
+	{
+		[[NSFileManager defaultManager] removeItemAtPath:DefaultModuleConfigurationPath error:nil];
+		[[NSFileManager defaultManager] removeItemAtPath:CCSupportModuleConfigurationPath error:nil];
+
+		//Reload CCSupport configuration
+		[eccSelf _repopulateModuleData];
+		[tableView reloadData];
+
+		[self ccs_unselectSelectedRow];
+	}]];
+
+	[resetAlert addAction:[UIAlertAction actionWithTitle:localize(@"CANCEL") style:UIAlertActionStyleCancel handler:^(UIAlertAction *action)
+	{
+		[self ccs_unselectSelectedRow];
+	}]];
+
+	[eccSelf presentViewController:resetAlert animated:YES completion:nil];
+}
+
 %end
+%end
+
+%group ControlCenterSettings_ModulesController
 
 %hook CCUISettingsModulesController //iOS 11-13
 
@@ -325,14 +399,7 @@ BOOL loadFixedModuleIdentifiers()
 {
 	%orig;
 
-	UITableViewController* tableViewController = MSHookIvar<UITableViewController*>(self, "_tableViewController");
-
-	NSIndexPath* selectedRow = [tableViewController.tableView indexPathForSelectedRow];
-
-	if(selectedRow)
-	{
-		[tableViewController.tableView deselectRowAtIndexPath:selectedRow animated:YES];
-	}
+	[self ccs_unselectSelectedRow];
 }
 
 //Add section for reset button to table view
@@ -395,43 +462,7 @@ BOOL loadFixedModuleIdentifiers()
 {
 	if(indexPath.section == 2 && indexPath.row == 0)
 	{
-		UIAlertController* resetAlert = [UIAlertController alertControllerWithTitle:localize(@"RESET_MODULES") message:localize(@"RESET_MODULES_DESCRIPTION") preferredStyle:UIAlertControllerStyleAlert];
-
-		[resetAlert addAction:[UIAlertAction actionWithTitle:localize(@"RESET_DEFAULT_CONFIGURATION") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
-		{
-			[[NSFileManager defaultManager] removeItemAtPath:DefaultModuleConfigurationPath error:nil];
-			[tableView deselectRowAtIndexPath:indexPath animated:YES];
-		}]];
-
-		[resetAlert addAction:[UIAlertAction actionWithTitle:localize(@"RESET_CCSUPPORT_CONFIGURATION") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
-		{
-			[[NSFileManager defaultManager] removeItemAtPath:CCSupportModuleConfigurationPath error:nil];
-
-			//Reload CCSupport configuration
-			[self _repopulateModuleData];
-			[tableView reloadData];
-
-			[tableView deselectRowAtIndexPath:indexPath animated:YES];
-		}]];
-
-		[resetAlert addAction:[UIAlertAction actionWithTitle:localize(@"RESET_BOTH_CONFIGURATIONS") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action)
-		{
-			[[NSFileManager defaultManager] removeItemAtPath:DefaultModuleConfigurationPath error:nil];
-			[[NSFileManager defaultManager] removeItemAtPath:CCSupportModuleConfigurationPath error:nil];
-
-			//Reload CCSupport configuration
-			[self _repopulateModuleData];
-			[tableView reloadData];
-
-			[tableView deselectRowAtIndexPath:indexPath animated:YES];
-		}]];
-
-		[resetAlert addAction:[UIAlertAction actionWithTitle:localize(@"CANCEL") style:UIAlertActionStyleCancel handler:^(UIAlertAction *action)
-		{
-			[tableView deselectRowAtIndexPath:indexPath animated:YES];
-		}]];
-
-		[self presentViewController:resetAlert animated:YES completion:nil];
+		[self ccs_resetButtonPressed];
 	}
 	else
 	{
@@ -503,10 +534,12 @@ BOOL loadFixedModuleIdentifiers()
 }
 
 %end
+%end
 
+%group ControlCenterSettings_ListController
 %hook CCUISettingsListController
 
-/*- (NSMutableArray*)specifiers
+- (NSMutableArray*)specifiers
 {
 	BOOL startingFresh = [self valueForKey:@"_specfiers"] == nil;
 
@@ -514,9 +547,26 @@ BOOL loadFixedModuleIdentifiers()
 
 	if(startingFresh)
 	{
+		PSSpecifier* resetButtonGroupSpecifier = [PSSpecifier emptyGroupSpecifier];
+        [resetButtonGroupSpecifier setProperty:localize(@"RESET_MODULES_DESCRIPTION") forKey:@"footerText"];
 
+		PSSpecifier* resetButtonSpecifier = [PSSpecifier preferenceSpecifierNamed:localize(@"RESET_MODULES")
+                                                target:self
+                                                set:nil
+                                                get:nil
+                                                detail:nil
+                                                cell:PSButtonCell
+                                                edit:nil];
+        
+        [resetButtonSpecifier setProperty:@YES forKey:@"enabled"];
+        resetButtonSpecifier.buttonAction = @selector(ccs_resetButtonPressed);
+
+		[specifiers addObject:resetButtonGroupSpecifier];
+		[specifiers addObject:resetButtonSpecifier];
 	}
-}*/
+
+	return specifiers;
+}
 
 - (NSMutableArray*)_specifiersForIdentifiers:(NSArray*)identifiers
 {
@@ -692,13 +742,15 @@ void initControlCenterSettingsHooks()
 	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_14_0)
 	{
 		settingsControllerClass = NSClassFromString(@"CCUISettingsListController");
+		%init(ControlCenterSettings_ListController);
 	}
 	else
 	{
 		settingsControllerClass = NSClassFromString(@"CCUISettingsModulesController");
+		%init(ControlCenterSettings_ModulesController);
 	}
 
-	%init(ControlCenterSettings, SettingsControllerSharedAcrossVersions=settingsControllerClass);
+	%init(ControlCenterSettings_Shared, SettingsControllerSharedAcrossVersions=settingsControllerClass);
 }
 
 static void bundleLoaded(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
