@@ -541,7 +541,7 @@ BOOL loadFixedModuleIdentifiers()
 
 - (NSMutableArray*)specifiers
 {
-	BOOL startingFresh = [self valueForKey:@"_specfiers"] == nil;
+	BOOL startingFresh = [self valueForKey:@"_specifiers"] == nil;
 
 	NSMutableArray* specifiers = %orig;
 
