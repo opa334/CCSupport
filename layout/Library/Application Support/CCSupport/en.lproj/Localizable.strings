@@ -7,7 +7,7 @@
 "Screen Mirroring" = "Screen Mirroring";
 
 "RESET_MODULES" = "Reset Modules";
-"RESET_MODULES_DESCRIPTION" = "CCSupport redirects the module configuration file to another path. Therefore the module configuration is seperated between when the tweak is loaded and when it isn't loaded (for example in safe mode or when not jailbroken). Which module configuration do you want to reset?";
+"RESET_MODULES_DESCRIPTION" = "CCSupport redirects the module configuration file to another path. Therefore the module configuration is separated between when the tweak is loaded and when it isn't loaded (for example in safe mode or when not jailbroken). Which module configuration do you want to reset?";
 "RESET_DEFAULT_CONFIGURATION" = "Reset default configuration";
 "RESET_CCSUPPORT_CONFIGURATION" = "Reset CCSupport configuration";
 "RESET_BOTH_CONFIGURATIONS" = "Reset both configurations";

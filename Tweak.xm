@@ -91,7 +91,6 @@ BOOL loadFixedModuleIdentifiers()
 	{
 		MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
 	}
-
 	
 	%orig;
 }
@@ -144,6 +143,12 @@ BOOL loadFixedModuleIdentifiers()
 
 %end
 
+%hook CCUIModuleSettings
+
+%property(nonatomic, assign) BOOL ccs_usesDynamicSize;
+
+%end
+
 %hook CCUIModuleSettingsManager
 
 //Load custom sizes from plist / from method
@@ -151,15 +156,25 @@ BOOL loadFixedModuleIdentifiers()
 {
 	CCUIModuleSettings* moduleSettings = %orig;
 
-	CCUIModuleInstance* moduleInstance = [[%c(CCUIModuleInstanceManager) sharedInstance] instanceForModuleIdentifier:moduleIdentifier];
-	NSObject<DynamicSizeModule>* module = (NSObject<DynamicSizeModule>*)moduleInstance.module;
+	CCSModuleRepository* repository = [[%c(CCUIModuleInstanceManager) sharedInstance] valueForKey:@"_repository"];
+	CCSModuleMetadata* metadata = [repository moduleMetadataForModuleIdentifier:moduleIdentifier];
 
-	NSBundle* moduleBundle = [NSBundle bundleWithURL:moduleInstance.metadata.moduleBundleURL];
-	NSNumber* getSizeAtRuntime = [moduleBundle objectForInfoDictionaryKey:@"CCSGetModuleSizeAtRuntime"];
+	if(!metadata.moduleBundleURL)
+	{
+		return moduleSettings;
+	}
+
+	NSBundle* moduleBundle = [NSBundle bundleWithURL:metadata.moduleBundleURL];
+	NSNumber* getSizeAtRuntime = [moduleBundle objectForInfoDictionaryKey:@"CCSGetModuleSizeAtRuntime"];	
 
 	if([getSizeAtRuntime boolValue])
 	{
-		if([module respondsToSelector:@selector(moduleSizeForOrientation:)])
+		moduleSettings.ccs_usesDynamicSize = YES;
+
+		CCUIModuleInstance* moduleInstance = [[%c(CCUIModuleInstanceManager) sharedInstance] instanceForModuleIdentifier:moduleIdentifier];
+		NSObject<DynamicSizeModule>* module = (NSObject<DynamicSizeModule>*)moduleInstance.module;
+
+		if(module && [module respondsToSelector:@selector(moduleSizeForOrientation:)])
 		{
 			MSHookIvar<CCUILayoutSize>(moduleSettings, "_portraitLayoutSize") = [module moduleSizeForOrientation:CCOrientationPortrait];
 			MSHookIvar<CCUILayoutSize>(moduleSettings, "_landscapeLayoutSize") = [module moduleSizeForOrientation:CCOrientationLandscape];
@@ -539,6 +554,13 @@ BOOL loadFixedModuleIdentifiers()
 %group ControlCenterSettings_ListController
 %hook CCUISettingsListController
 
+- (void)viewDidLoad
+{
+	%orig;
+	UITableView* tableView = [self ccs_getTableView];
+	tableView.allowsSelectionDuringEditing = YES;
+}
+
 - (NSMutableArray*)specifiers
 {
 	BOOL startingFresh = [self valueForKey:@"_specifiers"] == nil;
@@ -548,7 +570,6 @@ BOOL loadFixedModuleIdentifiers()
 	if(startingFresh)
 	{
 		PSSpecifier* resetButtonGroupSpecifier = [PSSpecifier emptyGroupSpecifier];
-        [resetButtonGroupSpecifier setProperty:localize(@"RESET_MODULES_DESCRIPTION") forKey:@"footerText"];
 
 		PSSpecifier* resetButtonSpecifier = [PSSpecifier preferenceSpecifierNamed:localize(@"RESET_MODULES")
                                                 target:self
@@ -579,7 +600,7 @@ BOOL loadFixedModuleIdentifiers()
 		NSInteger index = [specifiers indexOfObject:specifier];
 		if(index >= identifiersCount)
 		{
-			NSLog(@"shouldn't happen but better safe than sorry");
+			//NSLog(@"shouldn't happen but better safe than sorry");
 			break;
 		}
 
@@ -608,23 +629,6 @@ BOOL loadFixedModuleIdentifiers()
 			{
 				specifier.cellType = PSLinkListCell;
 				specifier.detailControllerClass = rootListControllerClass;
-
-				[specifier setProperty:NSStringFromClass(rootListControllerClass) forKey:@"detail"];
-				[specifier setProperty:@YES forKey:@"enabled"];
-				[specifier setProperty:@YES forKey:@"isController"];
-
-				/*PSSpecifier* newSpecifier = [PSSpecifier preferenceSpecifierNamed:specifier.name
-						  target:self
-						  set:nil
-						  get:nil
-						  detail:rootListControllerClass
-						  cell:PSLinkListCell
-						  edit:nil];
-				
-				[newSpecifier setProperty:@YES forKey:@"enabled"];
-				newSpecifier.detailControllerClass = rootListControllerClass;
-
-				[specifiers replaceObjectAtIndex:index withObject:newSpecifier];*/
 			}
 		}		
 	}
@@ -632,13 +636,29 @@ BOOL loadFixedModuleIdentifiers()
 	return specifiers;
 }
 
-//Make everything except reset button and modules with preference pages not clickable
+//Make reset button and modules with preference pages clickable
+- (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	NSString* moduleIdentifier = [self _identifierAtIndexPath:indexPath];
+	NSInteger numberOfSections = [self numberOfSectionsInTableView:tableView];
+
+	if(indexPath.section == numberOfSections-1 || [self.preferenceClassForModuleIdentifiers objectForKey:moduleIdentifier])
+	{
+		return indexPath;
+	}
+	else
+	{
+		return nil;
+	}
+}
+
 %new
 - (NSIndexPath *)tableView:(UITableView*)tableView willSelectRowAtIndexPath:(NSIndexPath*)indexPath
 {
 	NSString* moduleIdentifier = [self _identifierAtIndexPath:indexPath];
+	NSInteger numberOfSections = [self numberOfSectionsInTableView:tableView];
 
-	if(/*indexPath.section == 2 || */[self.preferenceClassForModuleIdentifiers objectForKey:moduleIdentifier])
+	if(indexPath.section == numberOfSections-1 || [self.preferenceClassForModuleIdentifiers objectForKey:moduleIdentifier])
 	{
 		return indexPath;
 	}
@@ -665,12 +685,6 @@ BOOL loadFixedModuleIdentifiers()
 	return cell;
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-	tableView.allowsSelectionDuringEditing = YES;
-	[tableView setEditing:NO animated:NO];
-	return %orig;
-}
 
 %end
 

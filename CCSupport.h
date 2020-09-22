@@ -36,6 +36,10 @@ enum
 - (CCUIModuleInstance*)instanceForModuleIdentifier:(NSString*)moduleIdentifier;
 @end
 
+@interface CCUIModuleSettings (CCSupport)
+@property (nonatomic, assign) BOOL ccs_usesDynamicSize;
+@end
+
 @interface CCUISettingsModuleDescription : NSObject
 @property(readonly, copy, nonatomic) NSString *displayName;
 @end
