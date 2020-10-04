@@ -80,20 +80,6 @@ BOOL loadFixedModuleIdentifiers()
 	//If this array contains less than 7 objects, something was modified with no doubt
 	return ([fixedModuleIdentifiers count] < 7);
 }
-/*
-@implementation CCSProvidedModuleBundle
-
-- (NSString*)displayName
-{
-	if(self.moduleDisplayName)
-	{
-		return self.moduleDisplayName;
-	}
-
-	return [super displayName];
-}
-
-@end*/
 
 @implementation CCSModuleProviderManager
 
@@ -244,8 +230,6 @@ BOOL loadFixedModuleIdentifiers()
 		visibilityPreference = [provider visibilityPreferenceForModuleWithIdentifier:identifier];
 	}
 
-	//CCSProvidedModuleBundle* bundle = [CCSProvidedModuleBundle bundleForClass:[provider class]];
-	//bundle.displayName = [provider displayNameForModuleIdentifier:identifier];
 	NSBundle* bundle = [NSBundle bundleForClass:[provider class]];
 
 	CCSModuleMetadata* metadata = [[%c(CCSModuleMetadata) alloc] _initWithModuleIdentifier:identifier supportedDeviceFamilies:supportedDeviceFamilies requiredDeviceCapabilities:requiredDeviceCapabilities associatedBundleIdentifier:associatedBundleIdentifier associatedBundleMinimumVersion:associatedBundleMinimumVersion visibilityPreference:visibilityPreference moduleBundleURL:bundle.bundleURL];
