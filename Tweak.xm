@@ -80,6 +80,20 @@ BOOL loadFixedModuleIdentifiers()
 	//If this array contains less than 7 objects, something was modified with no doubt
 	return ([fixedModuleIdentifiers count] < 7);
 }
+/*
+@implementation CCSProvidedModuleBundle
+
+- (NSString*)displayName
+{
+	if(self.moduleDisplayName)
+	{
+		return self.moduleDisplayName;
+	}
+
+	return [super displayName];
+}
+
+@end*/
 
 @implementation CCSModuleProviderManager
 
@@ -230,6 +244,8 @@ BOOL loadFixedModuleIdentifiers()
 		visibilityPreference = [provider visibilityPreferenceForModuleWithIdentifier:identifier];
 	}
 
+	//CCSProvidedModuleBundle* bundle = [CCSProvidedModuleBundle bundleForClass:[provider class]];
+	//bundle.displayName = [provider displayNameForModuleIdentifier:identifier];
 	NSBundle* bundle = [NSBundle bundleForClass:[provider class]];
 
 	CCSModuleMetadata* metadata = [[%c(CCSModuleMetadata) alloc] _initWithModuleIdentifier:identifier supportedDeviceFamilies:supportedDeviceFamilies requiredDeviceCapabilities:requiredDeviceCapabilities associatedBundleIdentifier:associatedBundleIdentifier associatedBundleMinimumVersion:associatedBundleMinimumVersion visibilityPreference:visibilityPreference moduleBundleURL:bundle.bundleURL];
@@ -428,18 +444,45 @@ BOOL loadFixedModuleIdentifiers()
 
 //Module providers
 
-- (NSMutableArray*)_queue_loadAllModuleMetadata
+%new
+- (NSArray*)ccshook_loadAllModuleMetadataWithOrig:(NSArray*)orig
 {
-	NSMutableArray* allModuleMetadata = %orig;
-
 	//add metadata provided by module providers
 	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
-
 	NSMutableArray* providedMetadata = [providerManager metadataForAllProvidedModules];
 
-	[allModuleMetadata addObjectsFromArray:providedMetadata];
+	if(!providedMetadata || providedMetadata.count <= 0)
+	{
+		return orig;
+	}
 
-	return allModuleMetadata;
+	NSArray* allModuleMetadata = orig;
+	NSMutableArray* allModuleMetadataM;
+
+	if([allModuleMetadata respondsToSelector:@selector(addObject:)])
+	{
+		allModuleMetadataM = (NSMutableArray*)allModuleMetadata;
+	}
+	else
+	{
+		allModuleMetadataM = [allModuleMetadata mutableCopy];
+	}
+
+	[allModuleMetadataM addObjectsFromArray:providedMetadata];
+
+	return allModuleMetadataM;
+}
+
+- (NSArray*)_queue_loadAllModuleMetadata //iOS 12+
+{
+	NSArray* orig = %orig;
+	return [self ccshook_loadAllModuleMetadataWithOrig:orig];
+}
+
+- (NSArray*)_loadAllModuleMetadata //iOS 11
+{
+	NSArray* orig = %orig;
+	return [self ccshook_loadAllModuleMetadataWithOrig:orig];
 }
 
 %end
@@ -592,9 +635,55 @@ BOOL loadFixedModuleIdentifiers()
 %end
 %end
 
+%group ControlCenterSettings_SortingFix_iOS13
+
+%hook CCUISettingsModulesController
+
+//By default there is a bug in iOS 13 where this method sorts the identifiers differently than _repoplateModuleData
+//We fix this by sorting it in the same way
+//_repoplateModuleData sorts with localizedStandardCompare:
+//this method normally sorts with compare:
+- (NSUInteger)_indexForInsertingItemWithIdentifier:(NSString*)identifier intoArray:(NSArray*)array
+{
+	return [array indexOfObject:identifier inSortedRange:NSMakeRange(0, array.count) options:NSBinarySearchingInsertionIndex usingComparator:^NSComparisonResult(id identifier1, id identifier2)
+	{
+		CCUISettingsModuleDescription* identifier1Description = [self _descriptionForIdentifier:identifier1];
+		CCUISettingsModuleDescription* identifier2Description = [self _descriptionForIdentifier:identifier2];
+
+		return [identifier1Description.displayName localizedStandardCompare:identifier2Description.displayName];
+	}];
+}
+
+%end
+
+%end
+
 %group ControlCenterSettings_Shared
 
 #define eccSelf ((UIViewController<SettingsControllerSharedAcrossVersions>*)self)
+
+%hook CCUISettingsModuleDescription
+
+- (instancetype)initWithIdentifier:(NSString*)identifier displayName:(NSString*)displayName iconImage:(UIImage*)icon
+{
+	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+	if([providerManager doesProvideModule:identifier])
+	{
+		UIImage* providedIconImage = icon;
+		NSString* providedDisplayName = [providerManager displayNameForModuleIdentifier:identifier];
+		UIImage* moduleIcon = [providerManager settingsIconForModuleIdentifier:identifier];
+		if(moduleIcon)
+		{
+			providedIconImage = moduleIconForImage(moduleIcon);
+		}
+
+		return %orig(identifier, providedDisplayName, providedIconImage);
+	}
+
+	return %orig;
+}
+
+%end
 
 %hook SettingsControllerSharedAcrossVersions //iOS 11-14
 
@@ -679,18 +768,6 @@ BOOL loadFixedModuleIdentifiers()
 	if([eccSelf.fixedModuleIcons.allKeys containsObject:identifier])
 	{
 		MSHookIvar<UIImage*>(moduleDescription, "_iconImage") = moduleIconForImage([eccSelf.fixedModuleIcons objectForKey:identifier]);
-	}
-
-	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
-	if([providerManager doesProvideModule:identifier])
-	{
-		NSString* providedDisplayName = [providerManager displayNameForModuleIdentifier:identifier];
-		MSHookIvar<NSString*>(moduleDescription, "_displayName") = providedDisplayName;
-		UIImage* moduleIcon = [providerManager settingsIconForModuleIdentifier:identifier];
-		if(moduleIcon)
-		{
-			MSHookIvar<UIImage*>(moduleDescription, "_iconImage") = moduleIconForImage(moduleIcon);
-		}
 	}
 
 	return moduleDescription;
@@ -1177,6 +1254,10 @@ void initControlCenterSettingsHooks()
 	}
 	else
 	{
+		if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_13_0)
+		{
+			%init(ControlCenterSettings_SortingFix_iOS13);
+		}
 		settingsControllerClass = NSClassFromString(@"CCUISettingsModulesController");
 		%init(ControlCenterSettings_ModulesController);
 	}

@@ -52,6 +52,11 @@ enum
 - (void)_queue_updateAllModuleMetadata;
 @end
 
+@interface CCSModuleRepository (CCSupport)
+- (NSArray*)ccshook_loadAllModuleMetadataWithOrig:(NSArray*)orig;
+@end
+
+
 //CCUISettingsModulesController on iOS 11-13
 //CCUISettingsListController on iOS 13
 
@@ -63,6 +68,7 @@ enum
 - (UITableView*)ccs_getTableView;
 - (void)ccs_unselectSelectedRow;
 - (void)ccs_resetButtonPressed;
+- (CCUISettingsModuleDescription*)_descriptionForIdentifier:(NSString*)identifier;
 @end
 
 @interface CCUISettingsModulesController : UITableViewController <SettingsControllerSharedAcrossVersions>
@@ -90,6 +96,10 @@ enum
 - (UIImage*)settingsIconForModuleIdentifier:(NSString*)identifier;
 - (BOOL)providesListControllerForModuleIdentifier:(NSString*)identifier;
 - (id)listControllerForModuleIdentifier:(NSString*)identifier;
+@end
+
+@interface CCSProvidedModuleBundle : NSBundle
+@property (nonatomic) NSString* moduleDisplayName;
 @end
 
 @interface CCSModuleProviderManager : NSObject
