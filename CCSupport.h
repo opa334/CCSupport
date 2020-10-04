@@ -40,8 +40,16 @@ enum
 @property (nonatomic, assign) BOOL ccs_usesDynamicSize;
 @end
 
+@interface CCSModuleMetadata (CCSupport)
+@property(nonatomic, assign) BOOL ccs_moduleFromProvider;
+@end
+
 @interface CCUISettingsModuleDescription : NSObject
 @property(readonly, copy, nonatomic) NSString *displayName;
+@end
+
+@interface CCSModuleRepository (iOS12Up)
+- (void)_queue_updateAllModuleMetadata;
 @end
 
 //CCUISettingsModulesController on iOS 11-13
@@ -64,4 +72,44 @@ enum
 @end
 
 @interface SBHomeScreenViewController : UIViewController
+@end
+
+@protocol CCSModuleProvider
+@required
+- (NSUInteger)numberOfProvidedModules;
+- (NSString*)identifierForModuleAtIndex:(NSUInteger)index;
+
+- (id)moduleInstanceForModuleIdentifier:(NSString*)identifier;
+- (NSString*)displayNameForModuleIdentifier:(NSString*)identifier;
+@optional
+- (NSSet*)supportedDeviceFamiliesForModuleWithIdentifier:(NSString*)identifier;
+- (NSSet*)requiredDeviceCapabilitiesForModuleWithIdentifier:(NSString*)identifier;
+- (NSString*)associatedBundleIdentifierForModuleWithIdentifier:(NSString*)identifier;
+- (NSString*)associatedBundleMinimumVersionForModuleWithIdentifier:(NSString*)identifier;
+- (NSUInteger)visibilityPreferenceForModuleWithIdentifier:(NSString*)identifier;
+- (UIImage*)settingsIconForModuleIdentifier:(NSString*)identifier;
+- (BOOL)providesListControllerForModuleIdentifier:(NSString*)identifier;
+- (id)listControllerForModuleIdentifier:(NSString*)identifier;
+@end
+
+@interface CCSModuleProviderManager : NSObject
+@property (nonatomic) NSDictionary* moduleProvidersByIdentifier;
+@property (nonatomic) NSDictionary* providerToModuleCache;
++ (instancetype)sharedInstance;
+- (void)_reloadProviders;
+- (void)_populateProviderToModuleCache;
+- (NSObject<CCSModuleProvider>*)_moduleProviderForModuleWithIdentifier:(NSString*)moduleIdentifier;
+- (CCSModuleMetadata*)_metadataForProvidedModuleWithIdentifier:(NSString*)identifier fromProvider:(NSObject<CCSModuleProvider>*)provider;
+- (NSMutableSet*)_allProvidedModuleIdentifiers;
+- (BOOL)doesProvideModule:(NSString*)moduleIdentifier;
+- (NSMutableArray*)metadataForAllProvidedModules;
+- (id)moduleInstanceForModuleIdentifier:(NSString*)identifier;
+- (BOOL)providesListControllerForModuleIdentifier:(NSString*)identifier;
+- (id)listControllerForModuleIdentifier:(NSString*)identifier;
+- (NSString*)displayNameForModuleIdentifier:(NSString*)identifier;
+- (UIImage*)settingsIconForModuleIdentifier:(NSString*)identifier;
+- (void)reload;
+@end
+
+@interface CCSProvidedListController : NSObject //placeholder
 @end

@@ -3,6 +3,8 @@
 #define CCSupportModuleConfigurationPath @"/var/mobile/Library/ControlCenter/ModuleConfiguration_CCSupport.plist"
 #define DefaultModuleOrderPath @"/System/Library/PrivateFrameworks/ControlCenterServices.framework/DefaultModuleOrder~%@.plist"
 
+#define ProviderBundlesPath @"/Library/ControlCenter/CCSupport_Providers"
+
 #ifndef kCFCoreFoundationVersionNumber_iOS_11_0
 #define kCFCoreFoundationVersionNumber_iOS_11_0 1443.00
 #endif

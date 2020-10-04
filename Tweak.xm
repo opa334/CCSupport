@@ -43,6 +43,30 @@ NSString* localize(NSString* key)
 	return localizedString;
 }
 
+UIImage* moduleIconForImage(UIImage* image)
+{
+	long long imageVariant;
+
+	CGFloat screenScale = UIScreen.mainScreen.scale;
+
+	if(screenScale >= 3.0)
+	{
+		imageVariant = 34;
+	}
+	else if(screenScale >= 2.0)
+	{
+		imageVariant = 17;
+	}
+	else
+	{
+		imageVariant = 4;
+	}
+
+	CGImageRef liIcon = LICreateIconForImage([image CGImage], imageVariant, 0);
+
+	return [[UIImage alloc] initWithCGImage:liIcon scale:screenScale orientation:0];
+}
+
 //Get fixed module identifiers from device specific plist (Return value: whether the plist was modified or not)
 BOOL loadFixedModuleIdentifiers()
 {
@@ -57,7 +81,304 @@ BOOL loadFixedModuleIdentifiers()
 	return ([fixedModuleIdentifiers count] < 7);
 }
 
+@implementation CCSModuleProviderManager
+
+- (instancetype)init
+{
+	self = [super init];
+
+	[self _reloadProviders];
+	[self _populateProviderToModuleCache];
+
+	return self;
+}
+
++ (instancetype)sharedInstance
+{
+	static CCSModuleProviderManager *sharedInstance = nil;
+	static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^
+	{
+		sharedInstance = [[CCSModuleProviderManager alloc] init];
+	});
+	return sharedInstance;
+}
+
+- (void)_reloadProviders
+{
+	NSMutableDictionary* newModuleIdentifiersByIdentifier = [NSMutableDictionary new];
+
+	NSURL* providersURL = [NSURL fileURLWithPath:ProviderBundlesPath isDirectory:YES];
+	NSArray<NSURL*>* contents = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:providersURL includingPropertiesForKeys:@[NSURLIsDirectoryKey] options:0 error:nil];
+	for(NSURL* itemURL in contents)
+	{
+		NSNumber* isDirectory;
+		[itemURL getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:nil];
+
+		if(![itemURL.pathExtension isEqualToString:@"bundle"] || ![isDirectory boolValue])
+		{
+			continue;
+		}
+
+		NSBundle* bundle = [NSBundle bundleWithURL:itemURL];
+		NSError* error;
+		BOOL loaded = [bundle loadAndReturnError:&error];
+		if(!loaded)
+		{
+			continue;
+		}
+
+		NSString* providerIdentifier = bundle.bundleIdentifier;
+		Class providerClass = bundle.principalClass;
+
+		if(providerClass)
+		{
+			NSObject<CCSModuleProvider>* provider = [[providerClass alloc] init];
+			[newModuleIdentifiersByIdentifier setObject:provider forKey:providerIdentifier];
+		}
+	}
+
+	self.moduleProvidersByIdentifier = [newModuleIdentifiersByIdentifier copy];
+}
+
+- (void)_populateProviderToModuleCache
+{
+	if(!self.moduleProvidersByIdentifier)
+	{
+		[self _reloadProviders];
+	}
+
+	NSMutableDictionary* newProviderToModuleCache = [NSMutableDictionary new];
+
+	for(NSString* key in [self.moduleProvidersByIdentifier allKeys])
+	{
+		NSObject<CCSModuleProvider>* provider = [self.moduleProvidersByIdentifier objectForKey:key];
+
+		NSMutableArray* moduleIdentifiers = [NSMutableArray new];
+
+		NSUInteger moduleNumber = [provider numberOfProvidedModules];
+		for(NSUInteger i = 0; i < moduleNumber; i++)
+		{
+			NSString* moduleIdentifier = [provider identifierForModuleAtIndex:i];
+			if(moduleIdentifier)
+			{
+				[moduleIdentifiers addObject:moduleIdentifier];
+			}
+		}
+
+		[newProviderToModuleCache setObject:[moduleIdentifiers copy] forKey:key];
+	}
+
+	self.providerToModuleCache = [newProviderToModuleCache copy];
+}
+
+- (NSObject<CCSModuleProvider>*)_moduleProviderForModuleWithIdentifier:(NSString*)moduleIdentifier
+{
+	if(!self.moduleProvidersByIdentifier)
+	{
+		[self _reloadProviders];
+	}
+	if(!self.providerToModuleCache)
+	{
+		[self _populateProviderToModuleCache];
+	}
+
+	for(NSString* moduleProviderIdentifier in self.providerToModuleCache)
+	{
+		NSArray* providedModuleIdentifiers = [self.providerToModuleCache objectForKey:moduleProviderIdentifier];
+		if([providedModuleIdentifiers containsObject:moduleIdentifier])
+		{
+			return [self.moduleProvidersByIdentifier objectForKey:moduleProviderIdentifier];
+		}
+	}
+
+	return nil;
+}
+
+- (CCSModuleMetadata*)_metadataForProvidedModuleWithIdentifier:(NSString*)identifier fromProvider:(NSObject<CCSModuleProvider>*)provider
+{
+	NSSet *supportedDeviceFamilies, *requiredDeviceCapabilities;
+	NSString *associatedBundleIdentifier, *associatedBundleMinimumVersion;
+	NSUInteger visibilityPreference = 0;
+
+	if([provider respondsToSelector:@selector(supportedDeviceFamiliesForModuleWithIdentifier:)])
+	{
+		supportedDeviceFamilies = [provider supportedDeviceFamiliesForModuleWithIdentifier:identifier];
+	}
+	else
+	{
+		supportedDeviceFamilies = [NSSet setWithObjects:@1, @2, nil];
+	}
+	if([provider respondsToSelector:@selector(requiredDeviceCapabilitiesForModuleWithIdentifier:)])
+	{
+		requiredDeviceCapabilities = [provider requiredDeviceCapabilitiesForModuleWithIdentifier:identifier];
+	}
+	else
+	{
+		requiredDeviceCapabilities = [NSSet setWithObjects:@"arm64", nil];
+	}
+	if([provider respondsToSelector:@selector(associatedBundleIdentifierForModuleWithIdentifier:)])
+	{
+		associatedBundleIdentifier = [provider associatedBundleIdentifierForModuleWithIdentifier:identifier];
+	}
+	if([provider respondsToSelector:@selector(associatedBundleMinimumVersionForModuleWithIdentifier:)])
+	{
+		associatedBundleMinimumVersion = [provider associatedBundleMinimumVersionForModuleWithIdentifier:identifier];
+	}
+	if([provider respondsToSelector:@selector(visibilityPreferenceForModuleWithIdentifier:)])
+	{
+		visibilityPreference = [provider visibilityPreferenceForModuleWithIdentifier:identifier];
+	}
+
+	NSBundle* bundle = [NSBundle bundleForClass:[provider class]];
+
+	CCSModuleMetadata* metadata = [[%c(CCSModuleMetadata) alloc] _initWithModuleIdentifier:identifier supportedDeviceFamilies:supportedDeviceFamilies requiredDeviceCapabilities:requiredDeviceCapabilities associatedBundleIdentifier:associatedBundleIdentifier associatedBundleMinimumVersion:associatedBundleMinimumVersion visibilityPreference:visibilityPreference moduleBundleURL:bundle.bundleURL];
+
+	return metadata;
+}
+
+- (NSMutableSet*)_allProvidedModuleIdentifiers
+{
+	NSMutableSet* allModuleIdentifiers = [NSMutableSet new];
+
+	for(NSString* providerIdentifier in self.moduleProvidersByIdentifier.allKeys)
+	{
+		for(NSString* moduleIdentifier in [self.providerToModuleCache objectForKey:providerIdentifier])
+		{
+			[allModuleIdentifiers addObject:moduleIdentifier];
+		}
+	}
+
+	return allModuleIdentifiers;
+}
+
+- (BOOL)doesProvideModule:(NSString*)moduleIdentifier
+{
+	NSObject<CCSModuleProvider>* moduleProvider = [self _moduleProviderForModuleWithIdentifier:moduleIdentifier];
+	return moduleProvider != nil;
+}
+
+- (NSMutableArray*)metadataForAllProvidedModules
+{
+	NSMutableArray* allMetadata = [NSMutableArray new];
+
+	for(NSString* moduleProviderIdentifier in self.providerToModuleCache)
+	{
+		NSObject<CCSModuleProvider>* provider = [self.moduleProvidersByIdentifier objectForKey:moduleProviderIdentifier];
+		NSArray* providedModuleIdentifiers = [self.providerToModuleCache objectForKey:moduleProviderIdentifier];
+		for(NSString* identifier in providedModuleIdentifiers)
+		{
+			CCSModuleMetadata* metadata = [self _metadataForProvidedModuleWithIdentifier:identifier fromProvider:provider];
+			if(metadata)
+			{
+				[allMetadata addObject:metadata];
+			}
+		}
+	}
+
+	return allMetadata;
+}
+
+- (id)moduleInstanceForModuleIdentifier:(NSString*)identifier
+{
+	NSObject<CCSModuleProvider>* provider = [self _moduleProviderForModuleWithIdentifier:identifier];
+	return [provider moduleInstanceForModuleIdentifier:identifier];
+}
+
+- (id)listControllerForModuleIdentifier:(NSString*)identifier
+{
+	NSObject<CCSModuleProvider>* provider = [self _moduleProviderForModuleWithIdentifier:identifier];
+
+	if([provider respondsToSelector:@selector(listControllerForModuleIdentifier:)])
+	{
+		return [provider listControllerForModuleIdentifier:identifier];
+	}
+
+	return nil;
+}
+
+- (NSString*)displayNameForModuleIdentifier:(NSString*)identifier
+{
+	NSObject<CCSModuleProvider>* provider = [self _moduleProviderForModuleWithIdentifier:identifier];
+	return [provider displayNameForModuleIdentifier:identifier];
+}
+
+- (UIImage*)settingsIconForModuleIdentifier:(NSString*)identifier
+{
+	NSObject<CCSModuleProvider>* provider = [self _moduleProviderForModuleWithIdentifier:identifier];
+
+	if([provider respondsToSelector:@selector(settingsIconForModuleIdentifier:)])
+	{
+		return [provider settingsIconForModuleIdentifier:identifier];
+	}
+
+	return nil;
+}
+
+- (BOOL)providesListControllerForModuleIdentifier:(NSString*)identifier
+{
+	NSObject<CCSModuleProvider>* provider = [self _moduleProviderForModuleWithIdentifier:identifier];
+	
+	if([provider respondsToSelector:@selector(providesListControllerForModuleIdentifier:)])
+	{
+		return [provider providesListControllerForModuleIdentifier:identifier];
+	}
+	
+	return NO;
+}
+
+//reloads and if any modules have been removed that are still added in CC, they're removed from the plist
+//(this is to prevent the plist from having entries that would otherwise never be removed)
+- (void)reload
+{
+	if(!isSpringBoard)
+	{
+		[self _reloadProviders];
+		[self _populateProviderToModuleCache];
+	}
+	else
+	{
+		NSMutableSet* moduleIdentifiersBeforeReload = [self _allProvidedModuleIdentifiers];
+		[self _reloadProviders];
+		[self _populateProviderToModuleCache];
+		NSMutableSet* moduleIdentifiersAfterReload = [self _allProvidedModuleIdentifiers];
+
+		[moduleIdentifiersBeforeReload minusSet:moduleIdentifiersAfterReload];
+
+		//moduleIdentifiersBeforeReload now contains all module identifiers
+		//that have been removed from providers since the last reload
+
+		BOOL changed = NO;
+		CCSModuleSettingsProvider* settingsProvider = [%c(CCSModuleSettingsProvider) sharedProvider];
+		NSMutableArray* orderedUserEnabledModuleIdentifiers = settingsProvider.orderedUserEnabledModuleIdentifiers.mutableCopy;
+
+		for(NSString* removedModuleIdentifier in moduleIdentifiersBeforeReload)
+		{
+			if([orderedUserEnabledModuleIdentifiers containsObject:removedModuleIdentifier])
+			{
+				changed = YES;
+				[orderedUserEnabledModuleIdentifiers removeObject:removedModuleIdentifier];
+			}
+		}
+
+		if(changed)
+		{
+			[settingsProvider setAndSaveOrderedUserEnabledModuleIdentifiers:orderedUserEnabledModuleIdentifiers];
+		}
+	}	
+}
+
+@end
+
+@implementation CCSProvidedListController //placeholder
+@end
+
 %group ControlCenterServices
+
+/*%hook CCSModuleMetadata
+%property(nonatomic, assign) BOOL ccs_moduleFromProvider;
+%end*/
+
 %hook CCSModuleRepository
 
 //Add path for third party bundles to directory urls
@@ -105,6 +426,22 @@ BOOL loadFixedModuleIdentifiers()
 	%orig;
 }
 
+//Module providers
+
+- (NSMutableArray*)_queue_loadAllModuleMetadata
+{
+	NSMutableArray* allModuleMetadata = %orig;
+
+	//add metadata provided by module providers
+	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+
+	NSMutableArray* providedMetadata = [providerManager metadataForAllProvidedModules];
+
+	[allModuleMetadata addObjectsFromArray:providedMetadata];
+
+	return allModuleMetadata;
+}
+
 %end
 
 %hook CCSModuleSettingsProvider
@@ -141,6 +478,36 @@ BOOL loadFixedModuleIdentifiers()
 	return [moduleInstanceByIdentifier objectForKey:moduleIdentifier];
 }
 
+//Get instances from module providers
+
+- (id)_instantiateModuleWithMetadata:(CCSModuleMetadata*)metadata
+{
+	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+	if([providerManager doesProvideModule:metadata.moduleIdentifier])
+	{
+		id module = [providerManager moduleInstanceForModuleIdentifier:metadata.moduleIdentifier];
+
+		if(module && [module conformsToProtocol:@protocol(CCUIContentModule)])
+		{
+			CCUILayoutSize prototypeModuleSize;
+			prototypeModuleSize.width = 1;
+			prototypeModuleSize.height = 1;
+
+			CCUIModuleInstance* instance = [[%c(CCUIModuleInstance) alloc] initWithMetadata:metadata module:module prototypeModuleSize:prototypeModuleSize];
+
+			return instance;
+		}
+		else
+		{
+			return nil;
+		}		
+	}
+	else
+	{
+		return %orig;
+	}
+}
+
 %end
 
 %hook CCUIModuleSettings
@@ -167,15 +534,22 @@ BOOL loadFixedModuleIdentifiers()
 	NSBundle* moduleBundle = [NSBundle bundleWithURL:metadata.moduleBundleURL];
 	NSNumber* getSizeAtRuntime = [moduleBundle objectForInfoDictionaryKey:@"CCSGetModuleSizeAtRuntime"];	
 
-	if([getSizeAtRuntime boolValue])
+	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+
+	if([getSizeAtRuntime boolValue] || [providerManager doesProvideModule:moduleIdentifier])
 	{
-		moduleSettings.ccs_usesDynamicSize = YES;
+		if([getSizeAtRuntime boolValue])
+		{
+			moduleSettings.ccs_usesDynamicSize = YES;
+		}
 
 		CCUIModuleInstance* moduleInstance = [[%c(CCUIModuleInstanceManager) sharedInstance] instanceForModuleIdentifier:moduleIdentifier];
 		NSObject<DynamicSizeModule>* module = (NSObject<DynamicSizeModule>*)moduleInstance.module;
 
 		if(module && [module respondsToSelector:@selector(moduleSizeForOrientation:)])
 		{
+			moduleSettings.ccs_usesDynamicSize = YES;
+
 			MSHookIvar<CCUILayoutSize>(moduleSettings, "_portraitLayoutSize") = [module moduleSizeForOrientation:CCOrientationPortrait];
 			MSHookIvar<CCUILayoutSize>(moduleSettings, "_landscapeLayoutSize") = [module moduleSizeForOrientation:CCOrientationLandscape];
 		}
@@ -277,6 +651,12 @@ BOOL loadFixedModuleIdentifiers()
 
 		NSString* rootListControllerClassName = [bundle objectForInfoDictionaryKey:@"CCSPreferencesRootListController"];
 
+		CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+		if([providerManager providesListControllerForModuleIdentifier:moduleIdentifier])
+		{
+			rootListControllerClassName = @"CCSProvidedListController";
+		}
+
 		if(rootListControllerClassName)
 		{
 			[preferenceClassForModuleIdentifiersM setObject:rootListControllerClassName forKey:moduleIdentifier];
@@ -286,39 +666,7 @@ BOOL loadFixedModuleIdentifiers()
 	eccSelf.preferenceClassForModuleIdentifiers = [preferenceClassForModuleIdentifiersM copy];
 }
 
-//Replace blank icons with icons loaded above
-- (UIImage*)_iconForBundle:(NSBundle*)bundle
-{
-	UIImage* fixedModuleIcon = [eccSelf.fixedModuleIcons objectForKey:bundle.bundleIdentifier];
-	if(fixedModuleIcon)
-	{
-		//Mimic how the original implementation creates the icon
-		long long imageVariant;
-
-		CGFloat screenScale = UIScreen.mainScreen.scale;
-
-		if(screenScale >= 3.0)
-		{
-			imageVariant = 34;
-		}
-		else if(screenScale >= 2.0)
-		{
-			imageVariant = 17;
-		}
-		else
-		{
-			imageVariant = 4;
-		}
-
-		CGImageRef image = LICreateIconForImage([fixedModuleIcon CGImage], imageVariant, 0);
-
-		return [[UIImage alloc] initWithCGImage:image scale:screenScale orientation:0];
-	}
-
-	return %orig;
-}
-
-//Add localized names
+//Add localized names & icons
 - (CCUISettingsModuleDescription*)_descriptionForIdentifier:(NSString*)identifier
 {
 	CCUISettingsModuleDescription* moduleDescription = %orig;
@@ -326,6 +674,23 @@ BOOL loadFixedModuleIdentifiers()
 	if([fixedModuleIdentifiers containsObject:identifier])
 	{
 		MSHookIvar<NSString*>(moduleDescription, "_displayName") = localize(moduleDescription.displayName);
+	}
+
+	if([eccSelf.fixedModuleIcons.allKeys containsObject:identifier])
+	{
+		MSHookIvar<UIImage*>(moduleDescription, "_iconImage") = moduleIconForImage([eccSelf.fixedModuleIcons objectForKey:identifier]);
+	}
+
+	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+	if([providerManager doesProvideModule:identifier])
+	{
+		NSString* providedDisplayName = [providerManager displayNameForModuleIdentifier:identifier];
+		MSHookIvar<NSString*>(moduleDescription, "_displayName") = providedDisplayName;
+		UIImage* moduleIcon = [providerManager settingsIconForModuleIdentifier:identifier];
+		if(moduleIcon)
+		{
+			MSHookIvar<UIImage*>(moduleDescription, "_iconImage") = moduleIconForImage(moduleIcon);
+		}
 	}
 
 	return moduleDescription;
@@ -486,21 +851,30 @@ BOOL loadFixedModuleIdentifiers()
 
 		if(rootListControllerClassName)
 		{
-			CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
-			NSBundle* moduleBundle = [NSBundle bundleWithURL:[moduleRepository moduleMetadataForModuleIdentifier:moduleIdentifier].moduleBundleURL];
-
-			Class rootListControllerClass = NSClassFromString(rootListControllerClassName);
-
-			if(!rootListControllerClass)
+			if([rootListControllerClassName isEqualToString:@"CCSProvidedListController"])
 			{
-				[moduleBundle load];
-				rootListControllerClass = NSClassFromString(rootListControllerClassName);
-			}
-
-			if(rootListControllerClass)
-			{
-				PSListController* listController = [[rootListControllerClass alloc] init];
+				CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+				PSListController* listController = [providerManager listControllerForModuleIdentifier:moduleIdentifier];
 				[self.navigationController pushViewController:listController animated:YES];
+			}
+			else
+			{
+				CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+				NSBundle* moduleBundle = [NSBundle bundleWithURL:[moduleRepository moduleMetadataForModuleIdentifier:moduleIdentifier].moduleBundleURL];
+
+				Class rootListControllerClass = NSClassFromString(rootListControllerClassName);
+
+				if(!rootListControllerClass)
+				{
+					[moduleBundle load];
+					rootListControllerClass = NSClassFromString(rootListControllerClassName);
+				}
+
+				if(rootListControllerClass)
+				{
+					PSListController* listController = [[rootListControllerClass alloc] init];
+					[self.navigationController pushViewController:listController animated:YES];
+				}
 			}
 		}
 	}
@@ -589,6 +963,22 @@ BOOL loadFixedModuleIdentifiers()
 	return specifiers;
 }
 
+- (id)controllerForSpecifier:(PSSpecifier*)specifier
+{
+	NSString* detail = NSStringFromClass(specifier.detailControllerClass);
+
+	if([detail isEqualToString:@"CCSProvidedListController"])
+	{
+		NSIndexPath* indexPath = [self indexPathForSpecifier:specifier];
+		NSString* moduleIdentifier = [self _identifierAtIndexPath:indexPath];
+
+		CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+		return [providerManager listControllerForModuleIdentifier:moduleIdentifier];
+	}
+
+	return %orig;
+}
+
 - (NSMutableArray*)_specifiersForIdentifiers:(NSArray*)identifiers
 {
 	NSMutableArray* specifiers = %orig;
@@ -600,7 +990,6 @@ BOOL loadFixedModuleIdentifiers()
 		NSInteger index = [specifiers indexOfObject:specifier];
 		if(index >= identifiersCount)
 		{
-			//NSLog(@"shouldn't happen but better safe than sorry");
 			break;
 		}
 
@@ -609,6 +998,11 @@ BOOL loadFixedModuleIdentifiers()
 		if([fixedModuleIdentifiers containsObject:moduleIdentifier])
 		{
 			specifier.name = localize(specifier.name);
+		}
+		CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+		if([providerManager doesProvideModule:moduleIdentifier])
+		{
+			specifier.name = [providerManager displayNameForModuleIdentifier:moduleIdentifier];
 		}
 
 		NSString* rootListControllerClassName = [self.preferenceClassForModuleIdentifiers objectForKey:moduleIdentifier];
@@ -724,6 +1118,29 @@ void reloadModuleSizes(CFNotificationCenterRef center, void *observer, CFStringR
 	[[%c(CCUIModularControlCenterViewController) _sharedCollectionViewController] _refreshPositionProviders];
 }
 
+void reloadModuleProviders(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
+{
+	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+	[providerManager reload];
+
+	CCSModuleRepository* repository = [[%c(CCUIModuleInstanceManager) sharedInstance] valueForKey:@"_repository"];
+	if([repository respondsToSelector:@selector(_updateAllModuleMetadata)])
+	{
+		[repository _updateAllModuleMetadata];
+	}
+	else
+	{
+		NSObject<OS_dispatch_queue>* queue = [repository valueForKey:@"_queue"];
+		if(queue)
+		{
+			dispatch_async(queue, ^
+			{
+				[repository _queue_updateAllModuleMetadata];
+			});
+		}
+	}	
+}
+
 void initControlCenterUIHooks()
 {
 	%init(ControlCenterUI);
@@ -785,6 +1202,8 @@ static void bundleLoaded(CFNotificationCenterRef center, void *observer, CFStrin
 {
 	CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
 	isSpringBoard = [[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"];
+
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, reloadModuleProviders, CFSTR("com.opa334.ccsupport/ReloadProviders"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
 	if(isSpringBoard)
 	{
