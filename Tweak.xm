@@ -619,11 +619,11 @@ BOOL loadFixedModuleIdentifiers()
 %end
 %end
 
-%group ControlCenterSettings_SortingFix_iOS13
+%group ControlCenterSettings_SortingFix_iOS13Down
 
 %hook CCUISettingsModulesController
 
-//By default there is a bug in iOS 13 where this method sorts the identifiers differently than _repoplateModuleData
+//By default there is a bug in iOS 11-13 where this method sorts the identifiers differently than _repoplateModuleData
 //We fix this by sorting it in the same way
 //_repoplateModuleData sorts with localizedStandardCompare:
 //this method normally sorts with compare:
@@ -1238,10 +1238,8 @@ void initControlCenterSettingsHooks()
 	}
 	else
 	{
-		if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_13_0)
-		{
-			%init(ControlCenterSettings_SortingFix_iOS13);
-		}
+		%init(ControlCenterSettings_SortingFix_iOS13Down);
+		
 		settingsControllerClass = NSClassFromString(@"CCUISettingsModulesController");
 		%init(ControlCenterSettings_ModulesController);
 	}
