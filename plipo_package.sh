@@ -53,7 +53,7 @@ make FINALPACKAGE=1 XCODE_12_SLICE=0
 echo "Combining..."
 find ./.theos/obj -print0 | while IFS= read -r -d '' file; do consumePlipoTmp "$file"; done
 
-rm -rf plipo_tmp
+rm -rf $PLIPO_TMP
 echo "Packaging..."
 
 # just running make package works because theos detects that the dylib
