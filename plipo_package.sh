@@ -22,10 +22,8 @@ PLIPO_TMP="./plipo_tmp"
 populatePlipoTmp () {
 	fileOutput=$(file $1)
 	if [[ $fileOutput == *"dynamically linked shared library"* ]]; then
-		if [[ $1 != *"/arm64e/"* ]]; then
-			plipo_tmp_file=./$PLIPO_TMP/$(basename $1)
-			cp $1 $plipo_tmp_file
-		fi
+		plipo_tmp_file=./$PLIPO_TMP/$(basename $1)
+		cp $1 $plipo_tmp_file
 	fi
 }
 
@@ -44,7 +42,7 @@ echo "Building Xcode 12 slice..."
 make FINALPACKAGE=1 XCODE_12_SLICE=1
 mkdir $PLIPO_TMP
 
-find ./.theos/obj -print0 | while IFS= read -r -d '' file; do populatePlipoTmp "$file"; done
+find ./.theos/obj/arm64e -print0 | while IFS= read -r -d '' file; do populatePlipoTmp "$file"; done
 
 make clean
 echo "Building other slices..."
