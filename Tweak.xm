@@ -2,12 +2,15 @@
 #import "Defines.h"
 
 #import <Preferences/PSListController.h>
-#import <Preferences/PSSpecifier.h>
+extern "C"
+{
+	#import <Preferences/PSSpecifier.h>
+}
 
-NSArray* fixedModuleIdentifiers;//Identifiers of (normally) fixed modules
-NSBundle* CCSupportBundle;	//Bundle for icons and localization (only needed / initialized in settings)
-NSDictionary* englishLocalizations;	//English localizations for fallback
-BOOL isSpringBoard;	//Are we SpringBoard???
+NSArray* fixedModuleIdentifiers; //Identifiers of (normally) fixed modules
+NSBundle* CCSupportBundle; //Bundle for icons and localization (only needed / initialized in settings)
+NSDictionary* englishLocalizations; //English localizations for fallback
+BOOL isSpringBoard; //Are we SpringBoard???
 
 //Get localized string for given key
 NSString* localize(NSString* key)
@@ -333,13 +336,11 @@ BOOL loadFixedModuleIdentifiers()
 {
 	if(!isSpringBoard)
 	{
-		[self _reloadProviders];
 		[self _populateProviderToModuleCache];
 	}
 	else
 	{
 		NSMutableSet* moduleIdentifiersBeforeReload = [self _allProvidedModuleIdentifiers];
-		[self _reloadProviders];
 		[self _populateProviderToModuleCache];
 		NSMutableSet* moduleIdentifiersAfterReload = [self _allProvidedModuleIdentifiers];
 
@@ -374,10 +375,6 @@ BOOL loadFixedModuleIdentifiers()
 @end
 
 %group ControlCenterServices
-
-/*%hook CCSModuleMetadata
-%property(nonatomic, assign) BOOL ccs_moduleFromProvider;
-%end*/
 
 %hook CCSModuleRepository
 
