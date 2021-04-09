@@ -6,6 +6,13 @@
 "DisplayModule" = "Helligkeit";
 "Screen Mirroring" = "Bildschirmsynchronisation";
 
+"Home Controls" = "Home-Steuerelemente";
+"Portrait Height" = "Hochformat Höhe";
+"Portrait Width" = "Hochformat Breite";
+"Landscape Height" = "Querformat Höhe";
+"Landscape Width" = "Querformat Breite";
+
+"HOME_CONTROLS_NOTICE" = "Diese Option ist deaktiviert, da CCSupport die Home-Steuerelemente zu der Liste unten hinzufügt. Dort können sie nach Benutzerpräferenz konfiguriert und plaziert werden.";
 "RESET_MODULES" = "Steuerelemente zurücksetzen";
 "RESET_MODULES_DESCRIPTION" = "CCSupport leitet die Moduleinstellungen auf eine andere Datei um. Dadurch wird die Konfiguration wenn der Tweak geladen ist, von der, wenn der Tweak nicht geladen ist (bspw. im Safe Mode oder nach einem Neustart vor dem erneuten jailbreaken), getrennt. Welche Konfiguration soll zurückgesetzt werden?";
 "RESET_DEFAULT_CONFIGURATION" = "Standardkonfiguration zurücksetzen";
@@ -17,3 +24,4 @@
 "SAFETY_MESSAGE" = "CCSupport wurde nicht geladen, da deine Systemdateien in einem modifiziertem Zustand sind. Ich habe ein externes Tool namens CCCleaner entwickelt, welches die betroffenen Systemdateien wiederherstellen kann. Wähle 'Öffnen' um mehr darüber herauszufinden.";
 "SAFETY_BUTTON_CLOSE" = "Schließen";
 "SAFETY_BUTTON_OPEN" = "Öffnen";
+

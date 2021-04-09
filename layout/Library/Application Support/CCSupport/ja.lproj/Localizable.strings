@@ -6,6 +6,13 @@
 "DisplayModule" = "明るさ";
 "Screen Mirroring" = "ミラーリング";
 
+/*Home Controls*/
+/*Portrait Height*/
+/*Portrait Width*/
+/*Landscape Height*/
+/*Landscape Width*/
+
+/*HOME_CONTROLS_NOTICE*/
 "RESET_MODULES" = "リセット";
 "RESET_MODULES_DESCRIPTION" = "CCSupportは、モジュール構成ファイルを別のパスにリダイレクトします。従ってモジュールの設定は、脱獄状態と入獄状態で別になります。どのモジュール構成をリセットしますか？";
 "RESET_DEFAULT_CONFIGURATION" = "入獄時設定をリセット";

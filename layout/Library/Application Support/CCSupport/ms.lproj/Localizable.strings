@@ -6,6 +6,13 @@
 "DisplayModule" = "Kecerahan";
 "Screen Mirroring" = "Cermin Skrin";
 
+/*Home Controls*/
+/*Portrait Height*/
+/*Portrait Width*/
+/*Landscape Height*/
+/*Landscape Width*/
+
+/*HOME_CONTROLS_NOTICE*/
 "RESET_MODULES" = "Reset Modul";
 "RESET_MODULES_DESCRIPTION" = "CCSupport mengalihkan fail konfigurasi modul ke laluan lain. Oleh itu konfigurasi antara modul dipisahkan apabila tweak dimuatkan dan apabila ia tidak dimuatkan (contohnya dalam mod selamat atau ketika mod tidak jailbreak). Konfigurasi modul mana yang anda ingin reset?";
 "RESET_DEFAULT_CONFIGURATION" = "Tetapkan semula kepada konfigurasi lalai";

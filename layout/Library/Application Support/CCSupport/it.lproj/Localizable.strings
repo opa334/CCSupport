@@ -6,6 +6,13 @@
 "DisplayModule" = "Luminosità";
 "Screen Mirroring" = "Duplicazione Schermo";
 
+/*Home Controls*/
+/*Portrait Height*/
+/*Portrait Width*/
+/*Landscape Height*/
+/*Landscape Width*/
+
+/*HOME_CONTROLS_NOTICE*/
 "RESET_MODULES" = "Ripristina Moduli";
 "RESET_MODULES_DESCRIPTION" = "CCSupport reindirizza il file di configurazione del modulo su un altro percorso. Pertanto la configurazione del modulo è separata tra quando il tweak è caricato e quando non lo è (ad esempio in modalità provvisoria o quando non è jailbroken). Quale configurazione del modulo vuoi ripristinare?";
 "RESET_DEFAULT_CONFIGURATION" = "Ripristina la configurazione di default";

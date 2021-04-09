@@ -6,6 +6,13 @@
 "DisplayModule" = "Helderheid";
 "Screen Mirroring" = "Scherm Spiegelen";
 
+/*Home Controls*/
+/*Portrait Height*/
+/*Portrait Width*/
+/*Landscape Height*/
+/*Landscape Width*/
+
+/*HOME_CONTROLS_NOTICE*/
 "RESET_MODULES" = "Stel Module Opnieuw In";
 "RESET_MODULES_DESCRIPTION" = "CCSupport zet de module configuratie folder over naar een ander pad. Daarom wordt de configuratie module gesplitst tussen wanneer de tweak geladen is en wanneer die niet geladen is (bijvoorbeeld in de veilige modus of wanneer het apparaat niet gejailbreakt is). Welke module configuratie wilt u resetten?";
 "RESET_DEFAULT_CONFIGURATION" = "Stel de standaard configuratie opnieuw in";

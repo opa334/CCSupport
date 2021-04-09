@@ -6,6 +6,13 @@
 "DisplayModule" = "亮度";
 "Screen Mirroring" = "屏幕镜像";
 
+/*Home Controls*/
+/*Portrait Height*/
+/*Portrait Width*/
+/*Landscape Height*/
+/*Landscape Width*/
+
+/*HOME_CONTROLS_NOTICE*/
 "RESET_MODULES" = "重置模组";
 "RESET_MODULES_DESCRIPTION" = "CCSupport 把模组配置文件路径重定向到了另一个路径。因此模组配置文件在此插件运行时与未运行时(比如处于安全模式或者未越狱状态下)是分开的。你想重置哪个配置文件?";
 "RESET_DEFAULT_CONFIGURATION" = "恢复默认设置";

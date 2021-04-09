@@ -23,10 +23,14 @@ enum
 #import <ControlCenterUI/CCUIModuleCollectionViewController.h>
 #import <ControlCenterUI/CCUIModularControlCenterViewController.h>
 #import <ControlCenterUI/CCUIModuleSettingsManager.h>
+#import <ControlCenterUI/CCUIContentModuleContainerViewController.h>
 
 #import <ControlCenterServices/CCSModuleMetadata.h>
 #import <ControlCenterServices/CCSModuleRepository.h>
 #import <ControlCenterServices/CCSModuleSettingsProvider.h>
+
+#import <ControlCenterUIKit/CCUIContentModuleContext.h>
+#import <ControlCenterUIKit/CCUIContentModule.h>
 
 @protocol DynamicSizeModule
 @optional
@@ -101,4 +105,9 @@ enum
 @end
 
 @interface CCSProvidedListController : NSObject //placeholder
+@end
+
+@interface NSValue (ControlCenterUI)
++ (NSValue*)ccui_valueWithLayoutSize:(CCUILayoutSize)layoutSize;
+- (CCUILayoutSize)ccui_sizeValue;
 @end

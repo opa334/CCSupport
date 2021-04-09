@@ -4,6 +4,8 @@ export ARCHS = arm64 arm64e
 
 export ROOTLESS ?= 0
 
+INSTALL_TARGET_PROCESSES = SpringBoard
+
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = CCSupport
@@ -11,12 +13,10 @@ CCSupport_CFLAGS = -fobjc-arc
 ifeq ($(ROOTLESS), 1)
 	CCSupport_CFLAGS += -D ROOTLESS=1
 endif
-CCSupport_FILES = Tweak.xm
+CCSupport_FILES = $(wildcard *.xm *.m)
 CCSupport_PRIVATE_FRAMEWORKS = MobileIcons Preferences
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
-after-install::
-	install.exec "killall -9 SpringBoard"
-
+SUBPROJECTS += HomeProvider
 include $(THEOS_MAKE_PATH)/aggregate.mk

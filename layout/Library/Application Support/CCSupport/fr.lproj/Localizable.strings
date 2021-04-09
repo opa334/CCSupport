@@ -6,6 +6,13 @@
 "DisplayModule" = "Luminosité";
 "Screen Mirroring" = "Mise en miroir d'écran";
 
+/*Home Controls*/
+/*Portrait Height*/
+/*Portrait Width*/
+/*Landscape Height*/
+/*Landscape Width*/
+
+/*HOME_CONTROLS_NOTICE*/
 "RESET_MODULES" = "Réinitialiser les modules";
 "RESET_MODULES_DESCRIPTION" = "CCSupport redirige le fichier de configuration du module vers un autre chemin d'accès. Par conséquent, la configuration du module est séparée entre le moment où le Tweak est chargé et quand il n'est pas chargé (par exemple en mode sans échec ou lorsqu'il n'est pas jailbreaké). Quelle configuration de module voulez-vous réinitialiser?";
 "RESET_DEFAULT_CONFIGURATION" = "Réinitialiser la configuration par défaut";

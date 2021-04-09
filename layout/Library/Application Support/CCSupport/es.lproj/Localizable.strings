@@ -6,6 +6,13 @@
 "DisplayModule" = "Brillo";
 "Screen Mirroring" = "Duplicar pantalla";
 
+/*Home Controls*/
+/*Portrait Height*/
+/*Portrait Width*/
+/*Landscape Height*/
+/*Landscape Width*/
+
+/*HOME_CONTROLS_NOTICE*/
 "RESET_MODULES" = "Restablecer módulos";
 "RESET_MODULES_DESCRIPTION" = "CCSupport redirige el archivo de configuración del módulo a otra ruta. Por lo tanto, la configuración del módulo está separada entre cuando se carga el tweak y cuando no está cargado (por ejemplo, en modo seguro o cuando no está jailbroken). ¿Qué configuración de módulo quieres restablecer?";
 "RESET_DEFAULT_CONFIGURATION" = "Restablecer configuración predeterminada";

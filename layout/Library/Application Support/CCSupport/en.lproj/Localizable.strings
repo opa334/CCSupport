@@ -6,6 +6,13 @@
 "DisplayModule" = "Brightness";
 "Screen Mirroring" = "Screen Mirroring";
 
+"Home Controls" = "Home Controls";
+"Portrait Height" = "Portrait Height";
+"Portrait Width" = "Portrait Width";
+"Landscape Height" = "Landscape Height";
+"Landscape Width" = "Landscape Width";
+
+"HOME_CONTROLS_NOTICE" = "This option is disabled because CCSupport adds the Home Controls to the Controls below, allowing you to resize it and place it anywhere you like.";
 "RESET_MODULES" = "Reset Modules";
 "RESET_MODULES_DESCRIPTION" = "CCSupport redirects the module configuration file to another path. Therefore the module configuration is separated between when the tweak is loaded and when it isn't loaded (for example in safe mode or when not jailbroken). Which module configuration do you want to reset?";
 "RESET_DEFAULT_CONFIGURATION" = "Reset default configuration";

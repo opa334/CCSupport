@@ -488,6 +488,12 @@ BOOL loadFixedModuleIdentifiers()
 	return [[fixedModuleIdentifiers arrayByAddingObjectsFromArray:%orig] mutableCopy];
 }
 
+//Disable stock home controls
+- (NSArray*)orderedUserEnabledFixedModuleIdentifiers
+{
+	return @[];
+}
+
 %end
 %end
 
@@ -509,7 +515,14 @@ BOOL loadFixedModuleIdentifiers()
 	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
 	if([providerManager doesProvideModule:metadata.moduleIdentifier])
 	{
-		id module = [providerManager moduleInstanceForModuleIdentifier:metadata.moduleIdentifier];
+		NSObject* module = [providerManager moduleInstanceForModuleIdentifier:metadata.moduleIdentifier];
+		if([module respondsToSelector:@selector(setContentModuleContext:)])
+		{
+			NSObject<CCUIContentModule>* contentModule = (NSObject<CCUIContentModule>*)module;
+			CCUIContentModuleContext* contentModuleContext = [[%c(CCUIContentModuleContext) alloc] initWithModuleIdentifier:@"com.opa334.CCSupport.Home.ControlCenter"];
+			contentModuleContext.delegate = self;
+			[contentModule setContentModuleContext:contentModuleContext];
+		}
 
 		if(module && [module conformsToProtocol:@protocol(CCUIContentModule)])
 		{
@@ -540,77 +553,121 @@ BOOL loadFixedModuleIdentifiers()
 
 %end
 
-%hook CCUIModuleSettingsManager
+// 14.3 sizes re:
+// -[CCUIModuleInstanceManager requestModuleLayoutSizeUpdateForContentModuleContext:]
+// runs moduleInstancesLayoutChangedForModuleInstanceManager: on observers
+// -[CCUIModuleCollectionViewController moduleInstancesLayoutChangedForModuleInstanceManager:]
+// runs _updatePositionProviders -> _refreshPositionProviders -> _sizesForModuleIdentifiers:moduleInstanceByIdentifier:interfaceOrientation:
+// in the end -[CCUIModuleCollectionViewController _sizesForModuleIdentifiers:moduleInstanceByIdentifier:interfaceOrientation:] is invoked
+// which calls moduleLayoutSizeForOrientation: on the contentViewController of the module if it exists
 
-//Load custom sizes from plist / from method
-- (CCUIModuleSettings*)moduleSettingsForModuleIdentifier:(NSString*)moduleIdentifier prototypeSize:(CCUILayoutSize)arg2
+%hook CCUIModuleCollectionViewController
+
+- (NSArray<NSValue*>*)_sizesForModuleIdentifiers:(NSArray<NSString*>*)moduleIdentifiers moduleInstanceByIdentifier:(NSDictionary*)moduleInstanceByIdentifier interfaceOrientation:(long long)interfaceOrientation
 {
-	CCUIModuleSettings* moduleSettings = %orig;
-
-	CCSModuleRepository* repository = [[%c(CCUIModuleInstanceManager) sharedInstance] valueForKey:@"_repository"];
-	CCSModuleMetadata* metadata = [repository moduleMetadataForModuleIdentifier:moduleIdentifier];
-
-	if(!metadata.moduleBundleURL)
-	{
-		return moduleSettings;
-	}
-
-	NSBundle* moduleBundle = [NSBundle bundleWithURL:metadata.moduleBundleURL];
-	NSNumber* getSizeAtRuntime = [moduleBundle objectForInfoDictionaryKey:@"CCSGetModuleSizeAtRuntime"];	
+	NSArray<NSValue*>* sizes = %orig;
+	NSMutableArray* sizesM = nil;
+	BOOL shouldReturnCopy = NO;
 
 	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
+	CCUIModuleSettingsManager* settingsManager = [self valueForKey:@"_settingsManager"];
 
-	if([getSizeAtRuntime boolValue] || [providerManager doesProvideModule:moduleIdentifier])
+	int orientationForInterfaceOrientation;
+	if(interfaceOrientation == 4)
 	{
-		if([getSizeAtRuntime boolValue])
-		{
-			moduleSettings.ccs_usesDynamicSize = YES;
-		}
-
-		CCUIModuleInstance* moduleInstance = [[%c(CCUIModuleInstanceManager) sharedInstance] instanceForModuleIdentifier:moduleIdentifier];
-		NSObject<DynamicSizeModule>* module = (NSObject<DynamicSizeModule>*)moduleInstance.module;
-
-		if(module && [module respondsToSelector:@selector(moduleSizeForOrientation:)])
-		{
-			moduleSettings.ccs_usesDynamicSize = YES;
-
-			MSHookIvar<CCUILayoutSize>(moduleSettings, "_portraitLayoutSize") = [module moduleSizeForOrientation:CCOrientationPortrait];
-			MSHookIvar<CCUILayoutSize>(moduleSettings, "_landscapeLayoutSize") = [module moduleSizeForOrientation:CCOrientationLandscape];
-		}
+		orientationForInterfaceOrientation = CCOrientationLandscape;
 	}
 	else
 	{
-		NSDictionary* moduleSizeDict = [moduleBundle objectForInfoDictionaryKey:@"CCSModuleSize"];
+		orientationForInterfaceOrientation = CCOrientationPortrait;
+	}
 
-		if(moduleSizeDict)
+	for(NSString* moduleIdentifier in moduleIdentifiers)
+	{
+		CCUIModuleInstance* moduleInstance = [moduleInstanceByIdentifier objectForKey:moduleIdentifier];
+		CCSModuleMetadata* metadata = moduleInstance.metadata;
+		NSBundle* moduleBundle = [NSBundle bundleWithURL:metadata.moduleBundleURL];
+		NSNumber* getSizeAtRuntime = [moduleBundle objectForInfoDictionaryKey:@"CCSGetModuleSizeAtRuntime"];
+
+		NSValue* sizeToSet;
+		BOOL ccs_usesDynamicSizeToSet = NO;
+
+		if([getSizeAtRuntime boolValue] || [providerManager doesProvideModule:moduleIdentifier])
 		{
-			NSDictionary* moduleSizePortraitDict = [moduleSizeDict objectForKey:@"Portrait"];
-			NSDictionary* moduleSizeLandscapeDict = [moduleSizeDict objectForKey:@"Landscape"];
+			CCUIModuleInstance* moduleInstance = [[%c(CCUIModuleInstanceManager) sharedInstance] instanceForModuleIdentifier:moduleIdentifier];
+			NSObject<DynamicSizeModule>* module = (NSObject<DynamicSizeModule>*)moduleInstance.module;
 
-			if(moduleSizePortraitDict && moduleSizeLandscapeDict)
+			if(module && [module respondsToSelector:@selector(moduleSizeForOrientation:)])
 			{
-				NSNumber* portraitWidth = [moduleSizePortraitDict objectForKey:@"Width"];
-				NSNumber* portraitHeight = [moduleSizePortraitDict objectForKey:@"Height"];
-				NSNumber* landscapeWidth = [moduleSizeLandscapeDict objectForKey:@"Width"];
-				NSNumber* landscapeHeight = [moduleSizeLandscapeDict objectForKey:@"Height"];
+				CCUILayoutSize layoutSize = [module moduleSizeForOrientation:orientationForInterfaceOrientation];
+				ccs_usesDynamicSizeToSet = YES;
+				sizeToSet = [NSValue ccui_valueWithLayoutSize:layoutSize];
+			}
+		}
+		else
+		{
+			NSDictionary* moduleSizeDict = [moduleBundle objectForInfoDictionaryKey:@"CCSModuleSize"];
+			NSDictionary* moduleSizeOrientationDict;
 
-				if(portraitWidth && portraitHeight && landscapeWidth && landscapeHeight)
+			if(orientationForInterfaceOrientation == CCOrientationPortrait)
+			{
+				moduleSizeOrientationDict = [moduleSizeDict objectForKey:@"Portrait"];
+			}
+			else if(orientationForInterfaceOrientation == CCOrientationLandscape)
+			{
+				moduleSizeOrientationDict = [moduleSizeDict objectForKey:@"Landscape"];
+			}
+
+			if(moduleSizeOrientationDict)
+			{
+				NSNumber* widthNum = [moduleSizeOrientationDict objectForKey:@"Width"];
+				NSNumber* heightNum = [moduleSizeOrientationDict objectForKey:@"Height"];
+
+				if(widthNum && heightNum)
 				{
-					CCUILayoutSize moduleSizePortrait, moduleSizeLandscape;
-
-					moduleSizePortrait.width = [portraitWidth unsignedIntegerValue];
-					moduleSizePortrait.height = [portraitHeight unsignedIntegerValue];
-					moduleSizeLandscape.width = [landscapeWidth unsignedIntegerValue];
-					moduleSizeLandscape.height = [landscapeHeight unsignedIntegerValue];
-
-					MSHookIvar<CCUILayoutSize>(moduleSettings, "_portraitLayoutSize") = moduleSizePortrait;
-					MSHookIvar<CCUILayoutSize>(moduleSettings, "_landscapeLayoutSize") = moduleSizeLandscape;
+					CCUILayoutSize layoutSize;
+					layoutSize.width = [widthNum unsignedIntegerValue];
+					layoutSize.height = [heightNum unsignedIntegerValue];
+					sizeToSet = [NSValue ccui_valueWithLayoutSize:layoutSize];
 				}
 			}
 		}
+
+		// Makes it possible for third party tweaks to check which modules have dynamic sizes
+		CCUIModuleSettings* moduleSettings = [settingsManager moduleSettingsForModuleIdentifier:moduleIdentifier prototypeSize:moduleInstance.prototypeModuleSize];
+		moduleSettings.ccs_usesDynamicSize = ccs_usesDynamicSizeToSet;
+
+		if(sizeToSet)
+		{
+			if(!sizesM)
+			{
+				//on iOS 12 and below, sizes is not mutable
+				if([sizes respondsToSelector:@selector(addObject:)])
+				{
+					sizesM = (NSMutableArray*)sizes;
+				}
+				else
+				{
+					sizesM = [sizes mutableCopy];
+				}
+			}
+
+			NSInteger index = [moduleIdentifiers indexOfObject:moduleIdentifier];
+			[sizesM replaceObjectAtIndex:index withObject:sizeToSet];
+		}
 	}
 
-	return moduleSettings;
+	if(!sizesM)
+	{
+		return sizes;
+	}
+
+	if(shouldReturnCopy)
+	{
+		return [sizesM copy];
+	}
+
+	return sizesM;
 }
 
 %end
@@ -1016,6 +1073,18 @@ BOOL loadFixedModuleIdentifiers()
 
 		[specifiers addObject:resetButtonGroupSpecifier];
 		[specifiers addObject:resetButtonSpecifier];
+
+		for(PSSpecifier* specifier in [specifiers reverseObjectEnumerator])
+		{
+			if([specifier.identifier isEqualToString:@"SHOW_HOME_CONTROLS"])
+			{
+				[specifier setProperty:@NO forKey:@"enabled"];
+			}
+			else if([specifier.identifier isEqualToString:@"SHOW_HOME_CONTROLS_GROUP"])
+			{
+				[specifier setProperty:localize(@"HOME_CONTROLS_NOTICE") forKey:@"footerText"];
+			}
+		}
 	}
 
 	return specifiers;
