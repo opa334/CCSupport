@@ -1,5 +1,6 @@
 #import "CCSupport.h"
 #import "Defines.h"
+#import <objc/runtime.h>
 
 #import <Preferences/PSListController.h>
 extern "C"
@@ -11,6 +12,16 @@ NSArray* fixedModuleIdentifiers; //Identifiers of (normally) fixed modules
 NSBundle* CCSupportBundle; //Bundle for icons and localization (only needed / initialized in settings)
 NSDictionary* englishLocalizations; //English localizations for fallback
 BOOL isSpringBoard; //Are we SpringBoard???
+
+static inline BOOL obj_hasIvar(id object, const char* ivarName)
+{
+	Ivar ivar = class_getInstanceVariable(object_getClass(object), ivarName);
+	if(ivar)
+	{
+		return YES;
+	}
+	return NO;
+}
 
 //Get localized string for given key
 NSString* localize(NSString* key)
@@ -399,13 +410,13 @@ BOOL loadFixedModuleIdentifiers()
 
 //Enable non whitelisted modules to be loaded
 
-- (void)_queue_updateAllModuleMetadata	//iOS 12 up
+- (void)_queue_updateAllModuleMetadata	//iOS >=12
 {
-	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_14_0)
+	if(obj_hasIvar(self, "_ignoreAllowedList")) //iOS >=14
 	{
 		MSHookIvar<BOOL>(self, "_ignoreAllowedList") = YES;
 	}
-	else
+	else if(obj_hasIvar(self, "_ignoreWhitelist")) //iOS 11-13
 	{
 		MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
 	}
@@ -415,7 +426,7 @@ BOOL loadFixedModuleIdentifiers()
 
 - (void)_updateAllModuleMetadata //iOS 11
 {
-	if(kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_12_0)
+	if(![self respondsToSelector:@selector(_queue_updateAllModuleMetadata)])
 	{
 		MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
 	}
@@ -454,7 +465,7 @@ BOOL loadFixedModuleIdentifiers()
 	return allModuleMetadataM;
 }
 
-- (NSArray*)_queue_loadAllModuleMetadata //iOS 12+
+- (NSArray*)_queue_loadAllModuleMetadata //iOS >=12
 {
 	NSArray* orig = %orig;
 	return [self ccshook_loadAllModuleMetadataWithOrig:orig];
@@ -723,7 +734,7 @@ BOOL loadFixedModuleIdentifiers()
 
 %end
 
-%hook SettingsControllerSharedAcrossVersions //iOS 11-14
+%hook SettingsControllerSharedAcrossVersions //iOS >=11
 
 %property (nonatomic, retain) NSDictionary *fixedModuleIcons;
 %property (nonatomic, retain) NSDictionary *preferenceClassForModuleIdentifiers;
@@ -814,15 +825,17 @@ BOOL loadFixedModuleIdentifiers()
 %new
 - (UITableView*)ccs_getTableView
 {
-	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_14_0)
+	if(obj_hasIvar(self, "_table")) //iOS >=14
 	{
 		return MSHookIvar<UITableView*>(self, "_table");
 	}
-	else
+	else if(obj_hasIvar(self, "_tableViewController")) //iOS 11-13
 	{
 		UITableViewController* tableViewController = MSHookIvar<UITableViewController*>(self, "_tableViewController");
 		return tableViewController.tableView;
 	}
+
+	return nil;
 }
 
 %new
@@ -1297,16 +1310,19 @@ void initControlCenterSettingsHooks()
 
 	Class settingsControllerClass;
 
-	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_14_0)
+	Class settingsControllerClass_14Up = NSClassFromString(@"CCUISettingsListController");
+	Class settingsControllerClass_13Down = NSClassFromString(@"CCUISettingsModulesController");
+
+	if(settingsControllerClass_14Up && !settingsControllerClass_13Down)
 	{
-		settingsControllerClass = NSClassFromString(@"CCUISettingsListController");
+		settingsControllerClass = settingsControllerClass_14Up;
 		%init(ControlCenterSettings_ListController);
 	}
-	else
+	else if(settingsControllerClass_13Down)
 	{
 		%init(ControlCenterSettings_SortingFix_iOS13Down);
 		
-		settingsControllerClass = NSClassFromString(@"CCUISettingsModulesController");
+		settingsControllerClass = settingsControllerClass_13Down;
 		%init(ControlCenterSettings_ModulesController);
 	}
 

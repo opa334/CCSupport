@@ -71,21 +71,22 @@ extern void initHardCodedFixes();
 __attribute__((constructor))
 static void init(void)
 {
-	if(kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_14_0)
+	if (@available(iOS 14, *))
+	{
+		CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
+		homeCCModuleBundle = [NSBundle bundleWithPath:@"/System/Library/ControlCenter/Bundles/HomeControlCenterModule.bundle"];
+
+		if([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"])
+		{
+			[homeCCModuleBundle load];
+
+			initCCSHPControlCenterModule();
+			initHardCodedFixes();
+		}
+	}
+	else
 	{
 		homeCCModuleBundle = nil;
 		return;
-	}
-
-	CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
-
-	homeCCModuleBundle = [NSBundle bundleWithPath:@"/System/Library/ControlCenter/Bundles/HomeControlCenterModule.bundle"];
-
-	if([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"])
-	{
-		[homeCCModuleBundle load];
-
-		initCCSHPControlCenterModule();
-		initHardCodedFixes();
 	}
 }
