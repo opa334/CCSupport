@@ -3,7 +3,6 @@
 
 @interface CCSHPHomeProvider : NSObject <CCSModuleProvider>
 {
-	HUCCControlCenterModule* _module;
 	UIImage* _settingsIcon;
 }
 
