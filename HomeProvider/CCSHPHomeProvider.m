@@ -27,11 +27,7 @@ NSBundle* CCSupportBundle;
 
 - (id)moduleInstanceForModuleIdentifier:(NSString*)identifier
 {
-	if(!_module)
-	{
-		_module = [[NSClassFromString(@"CCSHPControlCenterModule") alloc] init];
-	}
-	return _module;
+	return [[NSClassFromString(@"CCSHPControlCenterModule") alloc] init];
 }
 
 - (NSString*)displayNameForModuleIdentifier:(NSString*)identifier

@@ -530,7 +530,7 @@ BOOL loadFixedModuleIdentifiers()
 		if([module respondsToSelector:@selector(setContentModuleContext:)])
 		{
 			NSObject<CCUIContentModule>* contentModule = (NSObject<CCUIContentModule>*)module;
-			CCUIContentModuleContext* contentModuleContext = [[%c(CCUIContentModuleContext) alloc] initWithModuleIdentifier:@"com.opa334.CCSupport.Home.ControlCenter"];
+			CCUIContentModuleContext* contentModuleContext = [[%c(CCUIContentModuleContext) alloc] initWithModuleIdentifier:metadata.moduleIdentifier];
 			contentModuleContext.delegate = self;
 			[contentModule setContentModuleContext:contentModuleContext];
 		}
@@ -605,7 +605,6 @@ BOOL loadFixedModuleIdentifiers()
 
 		if([getSizeAtRuntime boolValue] || [providerManager doesProvideModule:moduleIdentifier])
 		{
-			CCUIModuleInstance* moduleInstance = [[%c(CCUIModuleInstanceManager) sharedInstance] instanceForModuleIdentifier:moduleIdentifier];
 			NSObject<DynamicSizeModule>* module = (NSObject<DynamicSizeModule>*)moduleInstance.module;
 
 			if(module && [module respondsToSelector:@selector(moduleSizeForOrientation:)])
@@ -659,6 +658,7 @@ BOOL loadFixedModuleIdentifiers()
 				}
 				else
 				{
+					shouldReturnCopy = YES;
 					sizesM = [sizes mutableCopy];
 				}
 			}
