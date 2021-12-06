@@ -31,9 +31,8 @@ NSString* localize(NSString* key)
 		key = @"AudioModule";
 	}
 	
-	NSString* localizedString = [CCSupportBundle localizedStringForKey:key value:@"" table:nil];
-
-	if([localizedString isEqualToString:@""])
+	NSString* localizedString = [CCSupportBundle localizedStringForKey:key value:nil table:nil];
+	if([localizedString isEqualToString:key])
 	{
 		if(!englishLocalizations)
 		{
