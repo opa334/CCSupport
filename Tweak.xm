@@ -596,6 +596,13 @@ BOOL loadFixedModuleIdentifiers()
 	{
 		CCUIModuleInstance* moduleInstance = [moduleInstanceByIdentifier objectForKey:moduleIdentifier];
 		CCSModuleMetadata* metadata = moduleInstance.metadata;
+
+		// protect against crashes if moduleBundleURL is nil
+		if(!metadata.moduleBundleURL)
+		{
+			continue;
+		}
+
 		NSBundle* moduleBundle = [NSBundle bundleWithURL:metadata.moduleBundleURL];
 		NSNumber* getSizeAtRuntime = [moduleBundle objectForInfoDictionaryKey:@"CCSGetModuleSizeAtRuntime"];
 
