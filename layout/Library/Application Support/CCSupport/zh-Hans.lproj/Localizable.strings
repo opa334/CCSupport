@@ -6,18 +6,18 @@
 "DisplayModule" = "亮度";
 "Screen Mirroring" = "屏幕镜像";
 
-/*Home Controls*/
-/*Portrait Height*/
-/*Portrait Width*/
-/*Landscape Height*/
-/*Landscape Width*/
+"Home Controls" = "家庭控制";
+"Portrait Height" = "竖屏时高度";
+"Portrait Width" = "竖屏时宽度";
+"Landscape Height" = "横屏时高度";
+"Landscape Width" = "横屏时宽度";
 
-/*HOME_CONTROLS_NOTICE*/
+"HOME_CONTROLS_NOTICE" = "该选项已禁用\nCCSupport 已将家庭控制整合到了下方的列表中，您可以调整它的大小并将其放置在您喜欢的任何位置。";
 "RESET_MODULES" = "重置模组";
-"RESET_MODULES_DESCRIPTION" = "CCSupport 把模组配置文件路径重定向到了另一个路径。因此模组配置文件在此插件运行时与未运行时(比如处于安全模式或者未越狱状态下)是分开的。你想重置哪个配置文件?";
-"RESET_DEFAULT_CONFIGURATION" = "恢复默认设置";
+"RESET_MODULES_DESCRIPTION" = "CCSupport 把模组配置文件指向了另一个路径。因此模组配置文件在此插件运行时与未运行时(比如处于安全模式或者未越狱状态下)是分开的。您打算重置哪个配置文件呢?";
+"RESET_DEFAULT_CONFIGURATION" = "重置系统自带的配置";
 "RESET_CCSUPPORT_CONFIGURATION" = "重置 CCSupport 配置";
-"RESET_BOTH_CONFIGURATIONS" = "重置这两个设置";
+"RESET_BOTH_CONFIGURATIONS" = "两者均重置";
 "CANCEL" = "取消";
 
 "SAFETY_TITLE" = "安全警告";
