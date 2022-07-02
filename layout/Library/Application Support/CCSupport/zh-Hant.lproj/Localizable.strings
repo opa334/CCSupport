@@ -1,7 +1,7 @@
 "ConnectivityModule" = "連接";
 "MediaControlsModule" = "播放控制";
 "DoNotDisturbModule" = "勿擾模式";
-"OrientationLockModule" = "熒幕旋轉鎖定";
+"OrientationLockModule" = "螢幕旋轉鎖定";
 "AudioModule" = "音量";
 "DisplayModule" = "亮度";
 "Screen Mirroring" = "屏幕鏡像";
@@ -21,7 +21,7 @@
 "CANCEL" = "取消";
 
 "SAFETY_TITLE" = "安全警告";
-"SAFETY_MESSAGE" = "CCSupport 因係統文檔被修改而無法加載。我另外開發了一個名爲 CCCleaner 的工具，可以清理受損的文件。點擊“打開”了解更多。";
+"SAFETY_MESSAGE" = "CCSupport 因系統文檔被修改而無法載入。我另外開發了一個名爲 CCCleaner 的工具，可以清理受損的文件。點擊“打開”了解更多。";
 "SAFETY_BUTTON_CLOSE" = "關閉";
 "SAFETY_BUTTON_OPEN" = "打開";
 
