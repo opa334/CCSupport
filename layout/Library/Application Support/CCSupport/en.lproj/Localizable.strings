@@ -5,6 +5,7 @@
 "AudioModule" = "Volume";
 "DisplayModule" = "Brightness";
 "Screen Mirroring" = "Screen Mirroring";
+"FocusUIModule" = "Focus";
 
 "Home Controls" = "Home Controls";
 "Portrait Height" = "Portrait Height";

@@ -66,7 +66,7 @@ enum
 //CCUISettingsListController on iOS 13
 
 @protocol SettingsControllerSharedAcrossVersions
-@property(nonatomic) NSDictionary* fixedModuleIcons; //NEW
+@property(nonatomic) NSDictionary* ccsp_additionalModuleIcons; //NEW
 @property(nonatomic, retain) NSDictionary* preferenceClassForModuleIdentifiers; //NEW
 - (void)_repopulateModuleData;
 - (id)_identifierAtIndexPath:(id)arg1;

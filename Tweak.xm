@@ -8,6 +8,32 @@ extern "C"
 	#import <Preferences/PSSpecifier.h>
 }
 
+NSString* getRootPath(void)
+{
+	static NSString* rootPath = nil;
+
+	static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^
+	{
+		NSFileManager* fileManager = [NSFileManager defaultManager];
+		NSDictionary* attributes = [fileManager attributesOfItemAtPath:@"/var/jb" error:nil];
+		if(attributes)
+		{
+			NSString* fileType = attributes[NSFileType];
+			if([fileType isEqualToString:NSFileTypeSymbolicLink])
+			{
+				rootPath = [fileManager destinationOfSymbolicLinkAtPath:@"/var/jb" error:nil];
+			}
+		}
+		if(!rootPath)
+		{
+			rootPath = @"/";
+		}
+    });
+
+	return rootPath;
+}
+
 NSArray* fixedModuleIdentifiers; //Identifiers of (normally) fixed modules
 NSBundle* CCSupportBundle; //Bundle for icons and localization (only needed / initialized in settings)
 NSDictionary* englishLocalizations; //English localizations for fallback
@@ -87,7 +113,12 @@ BOOL loadFixedModuleIdentifiers()
 	dispatch_once (&onceToken,
 	^{
 		//This method is called before the hook of it is initialized, that's why we can get the actual fixed identifiers here
-		fixedModuleIdentifiers = [%c(CCSModuleSettingsProvider) _defaultFixedModuleIdentifiers];
+		NSMutableArray* fixedModuleIdentifiersMutable = ((NSArray*)[%c(CCSModuleSettingsProvider) _defaultFixedModuleIdentifiers]).mutableCopy;
+		if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_15_0)
+		{
+			[fixedModuleIdentifiersMutable removeObjectsInArray:iOS15_WhitelistedFixedModuleIdentifiers];
+		}
+		fixedModuleIdentifiers = fixedModuleIdentifiersMutable.copy;
 	});
 
 	//If this array contains less than 7 objects, something was modified with no doubt
@@ -121,7 +152,8 @@ BOOL loadFixedModuleIdentifiers()
 {
 	NSMutableDictionary* newModuleIdentifiersByIdentifier = [NSMutableDictionary new];
 
-	NSURL* providersURL = [NSURL fileURLWithPath:ProviderBundlesPath isDirectory:YES];
+	NSString* providersPath = [getRootPath() stringByAppendingPathComponent:ProviderBundlePath];
+	NSURL* providersURL = [NSURL fileURLWithPath:providersPath isDirectory:YES];
 	NSArray<NSURL*>* contents = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:providersURL includingPropertiesForKeys:@[NSURLIsDirectoryKey] options:0 error:nil];
 	for(NSURL* itemURL in contents)
 	{
@@ -395,12 +427,9 @@ BOOL loadFixedModuleIdentifiers()
 
 	if(directories)
 	{
-    #ifdef ROOTLESS
-		NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System/Library" withString:@"/var/LIB"] isDirectory:YES];
-    #else
-		NSURL* thirdPartyURL = [NSURL fileURLWithPath:[[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System" withString:@""] isDirectory:YES];
-    #endif
-
+		NSString* originalPathWithoutSytem = [[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System/" withString:@""];
+		NSString* rootResolvedPath = [getRootPath() stringByAppendingPathComponent:originalPathWithoutSytem];
+		NSURL* thirdPartyURL = [NSURL fileURLWithPath:rootResolvedPath isDirectory:YES];
 		return [directories arrayByAddingObject:thirdPartyURL];
 	}
 
@@ -478,6 +507,26 @@ BOOL loadFixedModuleIdentifiers()
 
 %end
 
+// Hacky fix on iOS 15, see below in _queue_loadSettings
+%hook NSMutableArray
+
+NSArray* g_mutableArrayPreventRemoval = nil;
+
+- (void)removeObject:(NSObject*)object
+{
+	if(g_mutableArrayPreventRemoval)
+	{
+		if([g_mutableArrayPreventRemoval containsObject:object])
+		{
+			return;
+		}
+	}
+
+	%orig;
+}
+
+%end
+
 %hook CCSModuleSettingsProvider
 
 //Return different configuration plist to not mess everything up when the tweak is not enabled
@@ -489,19 +538,73 @@ BOOL loadFixedModuleIdentifiers()
 //Return empty array for fixed modules
 + (NSMutableArray*)_defaultFixedModuleIdentifiers
 {
-	return [NSMutableArray array];
+	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_15_0)
+	{
+		// Fix replaykit modules not showing up on iOS 15
+		return iOS15_WhitelistedFixedModuleIdentifiers.mutableCopy;
+	}
+	else
+	{
+		return [NSMutableArray array];
+	}
 }
 
 //Return fixed + non fixed modules
 + (NSMutableArray*)_defaultUserEnabledModuleIdentifiers
 {
-	return [[fixedModuleIdentifiers arrayByAddingObjectsFromArray:%orig] mutableCopy];
+	NSMutableArray* defaultUserEnabledModuleIdentifiers = [[fixedModuleIdentifiers arrayByAddingObjectsFromArray:%orig] mutableCopy];
+
+	// In iOS 15 the return order of this method is how the modules will be initially ordered on first launch
+	// Because CCSupport fucks this order up, we need to sort a few things manually so it appears just like it would on stock
+	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_15_0)
+	{
+		// 1. remove com.apple.donotdisturb.DoNotDisturbModule
+		[defaultUserEnabledModuleIdentifiers enumerateObjectsWithOptions:NSEnumerationReverse usingBlock:^(NSString* str, NSUInteger idx, BOOL* stop)
+		{
+			// for some reason calling removeObject with com.apple.donotdisturb.DoNotDisturbModule does not work
+			if([str isEqualToString:@"com.apple.donotdisturb.DoNotDisturbModule"])
+			{
+				[defaultUserEnabledModuleIdentifiers removeObjectAtIndex:idx];
+				*stop = YES;
+			}
+		}];
+
+		// 2. put com.apple.mediaremote.controlcenter.airplaymirroring after com.apple.control-center.OrientationLockModule
+		[defaultUserEnabledModuleIdentifiers removeObject:@"com.apple.mediaremote.controlcenter.airplaymirroring"];
+		NSInteger orientationLockModuleIndex = [defaultUserEnabledModuleIdentifiers indexOfObject:@"com.apple.control-center.OrientationLockModule"];
+		if(orientationLockModuleIndex != NSNotFound)
+		{
+			[defaultUserEnabledModuleIdentifiers insertObject:@"com.apple.mediaremote.controlcenter.airplaymirroring" atIndex:orientationLockModuleIndex+1];
+		}
+
+		// 3. insert com.apple.FocusUIModule after com.apple.mediaremote.controlcenter.audio
+		NSInteger audioIndex = [defaultUserEnabledModuleIdentifiers indexOfObject:@"com.apple.mediaremote.controlcenter.audio"];
+		if(audioIndex != NSNotFound)
+		{
+			[defaultUserEnabledModuleIdentifiers insertObject:@"com.apple.FocusUIModule" atIndex:audioIndex+1];
+		}
+	}
+
+	return defaultUserEnabledModuleIdentifiers;
 }
 
 //Disable stock home controls
 - (NSArray*)orderedUserEnabledFixedModuleIdentifiers
 {
 	return @[];
+}
+
+// Problem: On iOS 15, this method removes the Focus module from _orderedUserEnabledModuleIdentifiers
+// Additionally this also removes the "Do Not Disturb" and "Do Not Disturb While Driving" modules, these are hidden on stock iOS 15
+// but as they exist and work on iOS 15 just fine and are automatically unhidden by CCSupport anyways, I decided to leave them in
+- (void)_queue_loadSettings
+{
+	NSLog(@"loadSettings begin");
+	// This is kinda hacky but there is no better way of archiving this due to how the method functions, see NSMutableArray hook above
+	g_mutableArrayPreventRemoval = @[@"com.apple.FocusUIModule", @"com.apple.donotdisturb.DoNotDisturbModule", @"com.apple.control-center.CarModeModule"];
+	%orig;
+	g_mutableArrayPreventRemoval = nil;
+	NSLog(@"loadSettings end");
 }
 
 %end
@@ -742,15 +845,16 @@ BOOL loadFixedModuleIdentifiers()
 
 %hook SettingsControllerSharedAcrossVersions //iOS >=11
 
-%property (nonatomic, retain) NSDictionary *fixedModuleIcons;
+%property (nonatomic, retain) NSDictionary* ccsp_additionalModuleIcons;
+
 %property (nonatomic, retain) NSDictionary *preferenceClassForModuleIdentifiers;
 
 //Load icons for normally fixed modules and determine which modules have preferences
 - (void)_repopulateModuleData
 {
-	if(!eccSelf.fixedModuleIcons)
+	if(!eccSelf.ccsp_additionalModuleIcons)
 	{
-		NSMutableDictionary* fixedModuleIcons = [NSMutableDictionary new];
+		NSMutableDictionary* ccsp_additionalModuleIcons = [NSMutableDictionary new];
 
 		for(NSString* moduleIdentifier in fixedModuleIdentifiers)
 		{
@@ -769,23 +873,35 @@ BOOL loadFixedModuleIdentifiers()
 			
 			if(moduleIcon)
 			{
-				[fixedModuleIcons setObject:moduleIcon forKey:moduleIdentifier];
+				[ccsp_additionalModuleIcons setObject:moduleIcon forKey:moduleIdentifier];
 			}
 		}
 
-		eccSelf.fixedModuleIcons = [fixedModuleIcons copy];
+		if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_15_0)
+		{
+			UIImage* moduleIcon = [UIImage imageNamed:@"com.apple.FocusUIModule" inBundle:CCSupportBundle compatibleWithTraitCollection:nil];
+			[ccsp_additionalModuleIcons setObject:moduleIcon forKey:@"com.apple.FocusUIModule"];
+		}
+
+		eccSelf.ccsp_additionalModuleIcons = [ccsp_additionalModuleIcons copy];
 	}
 
 	%orig;
 
 	NSMutableArray* enabledIdentfiers = MSHookIvar<NSMutableArray*>(self, "_enabledIdentifiers");
 	NSMutableArray* disabledIdentifiers = MSHookIvar<NSMutableArray*>(self, "_disabledIdentifiers");
+	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_15_0)
+	{
+		// remove useless module that's normally hidden because of whitelist on iOS 15
+		[enabledIdentfiers removeObject:@"com.apple.TelephonyUtilities.SilenceCallsCCWidget"];
+		[disabledIdentifiers removeObject:@"com.apple.TelephonyUtilities.SilenceCallsCCWidget"];
+	}
 
-	NSArray* moduleIdentfiers = [enabledIdentfiers arrayByAddingObjectsFromArray:disabledIdentifiers];
+	NSArray* moduleIdentifiers = [enabledIdentfiers arrayByAddingObjectsFromArray:disabledIdentifiers];
 
 	NSMutableDictionary* preferenceClassForModuleIdentifiersM = [NSMutableDictionary new];
 
-	for(NSString* moduleIdentifier in moduleIdentfiers)
+	for(NSString* moduleIdentifier in moduleIdentifiers)
 	{
 		CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
 
@@ -815,14 +931,14 @@ BOOL loadFixedModuleIdentifiers()
 {
 	CCUISettingsModuleDescription* moduleDescription = %orig;
 
-	if([fixedModuleIdentifiers containsObject:identifier])
+	if([fixedModuleIdentifiers containsObject:identifier] || [identifier isEqualToString:@"com.apple.FocusUIModule"])
 	{
 		MSHookIvar<NSString*>(moduleDescription, "_displayName") = localize(moduleDescription.displayName);
 	}
 
-	if([eccSelf.fixedModuleIcons.allKeys containsObject:identifier])
+	if([eccSelf.ccsp_additionalModuleIcons.allKeys containsObject:identifier])
 	{
-		MSHookIvar<UIImage*>(moduleDescription, "_iconImage") = moduleIconForImage([eccSelf.fixedModuleIcons objectForKey:identifier]);
+		MSHookIvar<UIImage*>(moduleDescription, "_iconImage") = moduleIconForImage([eccSelf.ccsp_additionalModuleIcons objectForKey:identifier]);
 	}
 
 	return moduleDescription;
@@ -1128,7 +1244,6 @@ BOOL loadFixedModuleIdentifiers()
 - (NSMutableArray*)_specifiersForIdentifiers:(NSArray*)identifiers
 {
 	NSMutableArray* specifiers = %orig;
-
 	NSUInteger identifiersCount = identifiers.count;
 
 	for(PSSpecifier* specifier in specifiers)
@@ -1141,7 +1256,7 @@ BOOL loadFixedModuleIdentifiers()
 
 		NSString* moduleIdentifier = [identifiers objectAtIndex:index];
 
-		if([fixedModuleIdentifiers containsObject:moduleIdentifier])
+		if([fixedModuleIdentifiers containsObject:moduleIdentifier] || [moduleIdentifier isEqualToString:@"com.apple.FocusUIModule"])
 		{
 			specifier.name = localize(specifier.name);
 		}
@@ -1170,7 +1285,7 @@ BOOL loadFixedModuleIdentifiers()
 				specifier.cellType = PSLinkListCell;
 				specifier.detailControllerClass = rootListControllerClass;
 			}
-		}		
+		}
 	}
 
 	return specifiers;
