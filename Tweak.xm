@@ -3,10 +3,7 @@
 #import <objc/runtime.h>
 
 #import <Preferences/PSListController.h>
-extern "C"
-{
-	#import <Preferences/PSSpecifier.h>
-}
+#import <Preferences/PSSpecifier.h>
 
 NSArray* fixedModuleIdentifiers; //Identifiers of (normally) fixed modules
 NSBundle* CCSupportBundle; //Bundle for icons and localization (only needed / initialized in settings)
