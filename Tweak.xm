@@ -3,10 +3,7 @@
 #import <objc/runtime.h>
 
 #import <Preferences/PSListController.h>
-extern "C"
-{
-	#import <Preferences/PSSpecifier.h>
-}
+#import <Preferences/PSSpecifier.h>
 
 NSString* getRootPath(void)
 {
