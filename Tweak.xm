@@ -19,14 +19,18 @@ NSString* getRootPath(void)
 			NSString* fileType = attributes[NSFileType];
 			if([fileType isEqualToString:NSFileTypeSymbolicLink])
 			{
-				rootPath = [fileManager destinationOfSymbolicLinkAtPath:@"/var/jb" error:nil];
+				NSString* destination = [fileManager destinationOfSymbolicLinkAtPath:@"/var/jb" error:nil];
+				if(![destination isEqualToString:@"/jb"] && ![destination isEqualToString:@"/jb/"])
+				{
+					rootPath = destination;
+				}
 			}
 		}
 		if(!rootPath)
 		{
 			rootPath = @"/";
 		}
-    });
+	});
 
 	return rootPath;
 }
