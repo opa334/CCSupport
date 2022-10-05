@@ -439,11 +439,13 @@ BOOL loadFixedModuleIdentifiers()
 {
 	if(obj_hasIvar(self, "_ignoreAllowedList")) //iOS >=14
 	{
-		MSHookIvar<BOOL>(self, "_ignoreAllowedList") = YES;
+		//MSHookIvar<BOOL>(self, "_ignoreAllowedList") = YES;
+		[self setValue:@YES forKey:@"_ignoreAllowedList"];
 	}
 	else if(obj_hasIvar(self, "_ignoreWhitelist")) //iOS 11-13
 	{
-		MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+		//MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+		[self setValue:@YES forKey:@"_ignoreWhitelist"];
 	}
 	
 	%orig;
@@ -453,7 +455,8 @@ BOOL loadFixedModuleIdentifiers()
 {
 	if(![self respondsToSelector:@selector(_queue_updateAllModuleMetadata)])
 	{
-		MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+		//MSHookIvar<BOOL>(self, "_ignoreWhitelist") = YES;
+		[self setValue:@YES forKey:@"_ignoreWhitelist"];
 	}
 
 	%orig;
@@ -613,7 +616,8 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 %new
 - (CCUIModuleInstance*)instanceForModuleIdentifier:(NSString*)moduleIdentifier
 {
-	NSMutableDictionary* moduleInstanceByIdentifier = MSHookIvar<NSMutableDictionary*>(self, "_moduleInstanceByIdentifier");
+	//NSMutableDictionary* moduleInstanceByIdentifier = MSHookIvar<NSMutableDictionary*>(self, "_moduleInstanceByIdentifier");
+	NSMutableDictionary* moduleInstanceByIdentifier = [self valueForKey:@"_moduleInstanceByIdentifier"];
 
 	return [moduleInstanceByIdentifier objectForKey:moduleIdentifier];
 }
@@ -885,8 +889,11 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 
 	%orig;
 
-	NSMutableArray* enabledIdentfiers = MSHookIvar<NSMutableArray*>(self, "_enabledIdentifiers");
-	NSMutableArray* disabledIdentifiers = MSHookIvar<NSMutableArray*>(self, "_disabledIdentifiers");
+	//NSMutableArray* enabledIdentfiers = MSHookIvar<NSMutableArray*>(self, "_enabledIdentifiers");
+	//NSMutableArray* disabledIdentifiers = MSHookIvar<NSMutableArray*>(self, "_disabledIdentifiers");
+
+	NSMutableArray* enabledIdentfiers = [self valueForKey:@"_enabledIdentifiers"];
+	NSMutableArray* disabledIdentifiers = [self valueForKey:@"_disabledIdentifiers"];
 	if(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_15_0)
 	{
 		// remove useless module that's normally hidden because of whitelist on iOS 15
@@ -900,7 +907,8 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 
 	for(NSString* moduleIdentifier in moduleIdentifiers)
 	{
-		CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+		//CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+		CCSModuleRepository* moduleRepository = [self valueForKey:@"_moduleRepository"];
 
 		NSURL* bundleURL = [moduleRepository moduleMetadataForModuleIdentifier:moduleIdentifier].moduleBundleURL;
 
@@ -930,12 +938,14 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 
 	if([fixedModuleIdentifiers containsObject:identifier] || [identifier isEqualToString:@"com.apple.FocusUIModule"])
 	{
-		MSHookIvar<NSString*>(moduleDescription, "_displayName") = localize(moduleDescription.displayName);
+		//MSHookIvar<NSString*>(moduleDescription, "_displayName") = localize(moduleDescription.displayName);
+		[moduleDescription setValue:localize(moduleDescription.displayName) forKey:@"_displayName"];
 	}
 
 	if([eccSelf.ccsp_additionalModuleIcons.allKeys containsObject:identifier])
 	{
-		MSHookIvar<UIImage*>(moduleDescription, "_iconImage") = moduleIconForImage([eccSelf.ccsp_additionalModuleIcons objectForKey:identifier]);
+		//MSHookIvar<UIImage*>(moduleDescription, "_iconImage") = moduleIconForImage([eccSelf.ccsp_additionalModuleIcons objectForKey:identifier]);
+		[moduleDescription setValue:moduleIconForImage([eccSelf.ccsp_additionalModuleIcons objectForKey:identifier]) forKey:@"_iconImage"];
 	}
 
 	return moduleDescription;
@@ -946,11 +956,14 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 {
 	if(obj_hasIvar(self, "_table")) //iOS >=14
 	{
-		return MSHookIvar<UITableView*>(self, "_table");
+		//return MSHookIvar<UITableView*>(self, "_table");
+		return [self valueForKey:@"_table"];
 	}
 	else if(obj_hasIvar(self, "_tableViewController")) //iOS 11-13
 	{
-		UITableViewController* tableViewController = MSHookIvar<UITableViewController*>(self, "_tableViewController");
+		//UITableViewController* tableViewController = MSHookIvar<UITableViewController*>(self, "_tableViewController");
+		//return tableViewController.tableView;
+		UITableViewController* tableViewController = [self valueForKey:@"_tableViewController"];
 		return tableViewController.tableView;
 	}
 
@@ -1106,7 +1119,8 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 			}
 			else
 			{
-				CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+				//CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+				CCSModuleRepository* moduleRepository = [self valueForKey:@"_moduleRepository"];
 				NSBundle* moduleBundle = [NSBundle bundleWithURL:[moduleRepository moduleMetadataForModuleIdentifier:moduleIdentifier].moduleBundleURL];
 
 				Class rootListControllerClass = NSClassFromString(rootListControllerClassName);
@@ -1271,7 +1285,8 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 
 			if(!rootListControllerClass)
 			{
-				CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+				//CCSModuleRepository* moduleRepository = MSHookIvar<CCSModuleRepository*>(self, "_moduleRepository");
+				CCSModuleRepository* moduleRepository = [self valueForKey:@"_moduleRepository"];
 				NSBundle* moduleBundle = [NSBundle bundleWithURL:[moduleRepository moduleMetadataForModuleIdentifier:moduleIdentifier].moduleBundleURL];
 				[moduleBundle load];
 				rootListControllerClass = NSClassFromString(rootListControllerClassName);
