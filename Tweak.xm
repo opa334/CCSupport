@@ -5,6 +5,8 @@
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 
+#define kCFCoreFoundationVersionNumber_iOS_16_0 1932.101
+
 NSString* getRootPath(void)
 {
 	static NSString* rootPath = nil;
@@ -579,10 +581,13 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 		}
 
 		// 3. insert com.apple.FocusUIModule after com.apple.mediaremote.controlcenter.audio
-		NSInteger audioIndex = [defaultUserEnabledModuleIdentifiers indexOfObject:@"com.apple.mediaremote.controlcenter.audio"];
-		if(audioIndex != NSNotFound)
+		if(kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_16_0) // On iOS 16 this is not needed
 		{
-			[defaultUserEnabledModuleIdentifiers insertObject:@"com.apple.FocusUIModule" atIndex:audioIndex+1];
+			NSInteger audioIndex = [defaultUserEnabledModuleIdentifiers indexOfObject:@"com.apple.mediaremote.controlcenter.audio"];
+			if(audioIndex != NSNotFound)
+			{
+				[defaultUserEnabledModuleIdentifiers insertObject:@"com.apple.FocusUIModule" atIndex:audioIndex+1];
+			}
 		}
 	}
 
@@ -1377,7 +1382,13 @@ BOOL safetyAlertPresented = NO;
 
 void reloadModuleSizes(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
 {
-	[[%c(CCUIModularControlCenterViewController) _sharedCollectionViewController] _refreshPositionProviders];
+	Class vcClass = NSClassFromString(@"CCUIModularControlCenterViewController");
+	if(!vcClass)
+	{
+		vcClass = NSClassFromString(@"CCUIModularControlCenterOverlayViewController");
+	}
+
+	[[vcClass _sharedCollectionViewController] _refreshPositionProviders];
 }
 
 void reloadModuleProviders(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
