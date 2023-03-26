@@ -4,38 +4,9 @@
 
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
+#import <rootless.h>
 
 #define kCFCoreFoundationVersionNumber_iOS_16_0 1932.101
-
-NSString* getRootPath(void)
-{
-	static NSString* rootPath = nil;
-
-	static dispatch_once_t onceToken;
-	dispatch_once(&onceToken, ^
-	{
-		NSFileManager* fileManager = [NSFileManager defaultManager];
-		NSDictionary* attributes = [fileManager attributesOfItemAtPath:@"/var/jb" error:nil];
-		if(attributes)
-		{
-			NSString* fileType = attributes[NSFileType];
-			if([fileType isEqualToString:NSFileTypeSymbolicLink])
-			{
-				NSString* destination = [fileManager destinationOfSymbolicLinkAtPath:@"/var/jb" error:nil];
-				if(![destination isEqualToString:@"/jb"] && ![destination isEqualToString:@"/jb/"])
-				{
-					rootPath = destination;
-				}
-			}
-		}
-		if(!rootPath)
-		{
-			rootPath = @"/";
-		}
-	});
-
-	return rootPath;
-}
 
 NSArray* fixedModuleIdentifiers; //Identifiers of (normally) fixed modules
 NSBundle* CCSupportBundle; //Bundle for icons and localization (only needed / initialized in settings)
@@ -155,8 +126,7 @@ BOOL loadFixedModuleIdentifiers()
 {
 	NSMutableDictionary* newModuleIdentifiersByIdentifier = [NSMutableDictionary new];
 
-	NSString* providersPath = [getRootPath() stringByAppendingPathComponent:ProviderBundlePath];
-	NSURL* providersURL = [NSURL fileURLWithPath:providersPath isDirectory:YES];
+	NSURL* providersURL = [NSURL fileURLWithPath:CCSupportProvidersPath isDirectory:YES];
 	NSArray<NSURL*>* contents = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:providersURL includingPropertiesForKeys:@[NSURLIsDirectoryKey] options:0 error:nil];
 	for(NSURL* itemURL in contents)
 	{
@@ -431,8 +401,7 @@ BOOL loadFixedModuleIdentifiers()
 	if(directories)
 	{
 		NSString* originalPathWithoutSytem = [[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System/" withString:@""];
-		NSString* rootResolvedPath = [getRootPath() stringByAppendingPathComponent:originalPathWithoutSytem];
-		NSURL* thirdPartyURL = [NSURL fileURLWithPath:rootResolvedPath isDirectory:YES];
+		NSURL* thirdPartyURL = [NSURL fileURLWithPath:ROOT_PATH_NS_VAR(originalPathWithoutSytem) isDirectory:YES];
 		return [directories arrayByAddingObject:thirdPartyURL];
 	}
 
@@ -1478,6 +1447,8 @@ static void bundleLoaded(CFNotificationCenterRef center, void *observer, CFStrin
 
 %ctor
 {
+	%init();
+
 	CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
 	isSpringBoard = [[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"];
 
