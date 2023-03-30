@@ -1,6 +1,8 @@
-@protocol HFItemManagerDelegate;
-
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #import "Home.h"
+
+@protocol HFItemManagerDelegate;
 
 @protocol HUCCMosaicLayoutDelegate
 @required

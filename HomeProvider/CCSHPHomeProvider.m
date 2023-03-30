@@ -1,3 +1,6 @@
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+
 #import "CCSHPHomeProvider.h"
 #import "CCSHPPreferencesListController.h"
 

@@ -1,20 +1,5 @@
-#if defined __cplusplus
-extern "C" {
-#endif
-
-CGImageRef LICreateIconForImage(CGImageRef image, int variant, int precomposed);
-
-#if defined __cplusplus
-};
-#endif
-
-enum
-{
-	CCOrientationPortrait = 0,
-	CCOrientationLandscape = 1
-};
-
-#import "CCSModuleProvider.h"
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #import <Preferences/PSListController.h>
 
 #import <ControlCenterUI/CCUIModuleSettings.h>
@@ -31,6 +16,25 @@ enum
 
 #import <ControlCenterUIKit/CCUIContentModuleContext.h>
 #import <ControlCenterUIKit/CCUIContentModule.h>
+
+#import "CCSModuleProvider.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+CGImageRef LICreateIconForImage(CGImageRef image, int variant, int precomposed);
+
+#if defined __cplusplus
+};
+#endif
+
+enum
+{
+	CCOrientationPortrait = 0,
+	CCOrientationLandscape = 1
+};
+
 
 @protocol DynamicSizeModule
 @optional

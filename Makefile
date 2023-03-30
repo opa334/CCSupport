@@ -1,7 +1,8 @@
-export TARGET = iphone:clang:13.7:11.0
-export ARCHS = arm64 arm64e
-
-export ROOTLESS ?= 0
+ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
+TARGET := iphone:clang:16.2:15.0
+else
+TARGET := iphone:clang:14.5:11.0
+endif
 
 INSTALL_TARGET_PROCESSES = SpringBoard Preferences
 
@@ -9,9 +10,6 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = CCSupport
 CCSupport_CFLAGS = -fobjc-arc
-ifeq ($(ROOTLESS), 1)
-	CCSupport_CFLAGS += -D ROOTLESS=1
-endif
 CCSupport_FILES = $(wildcard *.xm *.m)
 CCSupport_PRIVATE_FRAMEWORKS = MobileIcons Preferences
 
