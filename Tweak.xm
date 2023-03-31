@@ -8,6 +8,17 @@
 
 #define kCFCoreFoundationVersionNumber_iOS_16_0 1932.101
 
+#ifndef THEOS_PACKAGE_INSTALL_PREFIX
+#define XINA_SUPPORT 1
+NSString *xinaHackFix(NSString *path)
+{
+	if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/LIY"]) {
+		return [@"/var/jb" stringByAppendingString:path];
+	}
+	return path;
+}
+#endif
+
 NSArray* fixedModuleIdentifiers; //Identifiers of (normally) fixed modules
 NSBundle* CCSupportBundle; //Bundle for icons and localization (only needed / initialized in settings)
 NSDictionary* englishLocalizations; //English localizations for fallback
@@ -126,7 +137,12 @@ BOOL loadFixedModuleIdentifiers()
 {
 	NSMutableDictionary* newModuleIdentifiersByIdentifier = [NSMutableDictionary new];
 
+#ifdef XINA_SUPPORT
+	NSURL* providersURL = [NSURL fileURLWithPath:xinaHackFix(CCSupportProvidersPath) isDirectory:YES];
+#else
 	NSURL* providersURL = [NSURL fileURLWithPath:CCSupportProvidersPath isDirectory:YES];
+#endif
+	
 	NSArray<NSURL*>* contents = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:providersURL includingPropertiesForKeys:@[NSURLIsDirectoryKey] options:0 error:nil];
 	for(NSURL* itemURL in contents)
 	{
@@ -400,8 +416,11 @@ BOOL loadFixedModuleIdentifiers()
 
 	if(directories)
 	{
-		NSString* originalPathWithoutSytem = [[directories.firstObject path] stringByReplacingOccurrencesOfString:@"/System/" withString:@""];
-		NSURL* thirdPartyURL = [NSURL fileURLWithPath:ROOT_PATH_NS_VAR(originalPathWithoutSytem) isDirectory:YES];
+#ifdef XINA_SUPPORT
+	NSURL* thirdPartyURL = [NSURL fileURLWithPath:xinaHackFix(CCSupportModulesPath) isDirectory:YES];
+#else
+	NSURL* thirdPartyURL = [NSURL fileURLWithPath:CCSupportModulesPath isDirectory:YES];
+#endif
 		return [directories arrayByAddingObject:thirdPartyURL];
 	}
 
@@ -504,6 +523,10 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 //Return different configuration plist to not mess everything up when the tweak is not enabled
 + (NSURL*)_configurationFileURL
 {
+	NSString *directoryPath = [CCSupportModuleConfigurationPath stringByDeletingLastPathComponent];
+	if (![[NSFileManager defaultManager] fileExistsAtPath:directoryPath]) {
+		[[NSFileManager defaultManager] createDirectoryAtPath:directoryPath withIntermediateDirectories:YES attributes:nil error:nil];
+	}
 	return [NSURL fileURLWithPath:CCSupportModuleConfigurationPath];
 }
 
