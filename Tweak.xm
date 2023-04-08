@@ -8,8 +8,7 @@
 
 #define kCFCoreFoundationVersionNumber_iOS_16_0 1932.101
 
-#ifndef THEOS_PACKAGE_INSTALL_PREFIX
-#define XINA_SUPPORT 1
+#ifdef XINA_SUPPORT
 NSString *xinaHackFix(NSString *path)
 {
 	if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/LIY"]) {

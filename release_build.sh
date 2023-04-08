@@ -2,7 +2,7 @@
 
 export PREFIX=$THEOS/toolchain/Xcode11.xctoolchain/usr/bin/
 make clean
-make package FINALPACKAGE=1
+make package FINALPACKAGE=1 XINA_SUPPORT=1
 
 export -n PREFIX
 make clean
