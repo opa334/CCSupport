@@ -8,16 +8,6 @@
 
 #define kCFCoreFoundationVersionNumber_iOS_16_0 1932.101
 
-#ifdef XINA_SUPPORT
-NSString *xinaHackFix(NSString *path)
-{
-	if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/LIY"]) {
-		return [@"/var/jb" stringByAppendingString:path];
-	}
-	return path;
-}
-#endif
-
 NSArray* fixedModuleIdentifiers; //Identifiers of (normally) fixed modules
 NSBundle* CCSupportBundle; //Bundle for icons and localization (only needed / initialized in settings)
 NSDictionary* englishLocalizations; //English localizations for fallback
@@ -135,12 +125,7 @@ BOOL loadFixedModuleIdentifiers()
 - (void)_reloadProviders
 {
 	NSMutableDictionary* newModuleIdentifiersByIdentifier = [NSMutableDictionary new];
-
-#ifdef XINA_SUPPORT
-	NSURL* providersURL = [NSURL fileURLWithPath:xinaHackFix(CCSupportProvidersPath) isDirectory:YES];
-#else
 	NSURL* providersURL = [NSURL fileURLWithPath:CCSupportProvidersPath isDirectory:YES];
-#endif
 	
 	NSArray<NSURL*>* contents = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:providersURL includingPropertiesForKeys:@[NSURLIsDirectoryKey] options:0 error:nil];
 	for(NSURL* itemURL in contents)
@@ -415,11 +400,7 @@ BOOL loadFixedModuleIdentifiers()
 
 	if(directories)
 	{
-#ifdef XINA_SUPPORT
-	NSURL* thirdPartyURL = [NSURL fileURLWithPath:xinaHackFix(CCSupportModulesPath) isDirectory:YES];
-#else
-	NSURL* thirdPartyURL = [NSURL fileURLWithPath:CCSupportModulesPath isDirectory:YES];
-#endif
+		NSURL* thirdPartyURL = [NSURL fileURLWithPath:CCSupportModulesPath isDirectory:YES];
 		return [directories arrayByAddingObject:thirdPartyURL];
 	}
 
