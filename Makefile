@@ -1,5 +1,3 @@
-XINA_SUPPORT ?= 0
-
 ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
 TARGET := iphone:clang:16.2:15.0
 else
@@ -15,7 +13,7 @@ CCSupport_CFLAGS = -fobjc-arc
 CCSupport_FILES = $(wildcard *.xm *.m)
 CCSupport_PRIVATE_FRAMEWORKS = MobileIcons Preferences
 
-ifeq ($(XINA_SUPPORT),1)
+ifneq ($(THEOS_PACKAGE_SCHEME),rootless)
 CCSupport_CFLAGS += -D XINA_SUPPORT=1
 endif
 
