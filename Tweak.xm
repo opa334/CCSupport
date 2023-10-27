@@ -577,12 +577,10 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 // but as they exist and work on iOS 15 just fine and are automatically unhidden by CCSupport anyways, I decided to leave them in
 - (void)_queue_loadSettings
 {
-	NSLog(@"loadSettings begin");
 	// This is kinda hacky but there is no better way of archiving this due to how the method functions, see NSMutableArray hook above
 	g_mutableArrayPreventRemoval = @[@"com.apple.FocusUIModule", @"com.apple.donotdisturb.DoNotDisturbModule", @"com.apple.control-center.CarModeModule"];
 	%orig;
 	g_mutableArrayPreventRemoval = nil;
-	NSLog(@"loadSettings end");
 }
 
 %end
@@ -800,12 +798,12 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 
 %hook CCUISettingsModuleDescription
 
-- (instancetype)initWithIdentifier:(NSString*)identifier displayName:(NSString*)displayName iconImage:(UIImage*)icon
+CCUISettingsModuleDescription *CCUISettingsModuleDescription_CCSInitHook(NSString *identifier, NSString *displayName, UIImage* iconImage, CCUISettingsModuleDescription *(^origBlock)(NSString *, UIImage *))
 {
 	CCSModuleProviderManager* providerManager = [CCSModuleProviderManager sharedInstance];
 	if([providerManager doesProvideModule:identifier])
 	{
-		UIImage* providedIconImage = icon;
+		UIImage* providedIconImage = iconImage;
 		NSString* providedDisplayName = [providerManager displayNameForModuleIdentifier:identifier];
 		UIImage* moduleIcon = [providerManager settingsIconForModuleIdentifier:identifier];
 		if(moduleIcon)
@@ -813,10 +811,25 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 			providedIconImage = moduleIconForImage(moduleIcon);
 		}
 
-		return %orig(identifier, providedDisplayName, providedIconImage);
+		return origBlock(providedDisplayName, providedIconImage);
 	}
+	return origBlock(displayName, iconImage);
+}
 
-	return %orig;
+// iOS <= 16
+- (instancetype)initWithIdentifier:(NSString*)identifier displayName:(NSString*)displayName iconImage:(UIImage*)iconImage
+{
+	return CCUISettingsModuleDescription_CCSInitHook(identifier, displayName, iconImage, ^(NSString *providedDisplayName, UIImage* providedIconImage) {
+		return %orig(identifier, providedDisplayName, providedIconImage);
+	});
+}
+
+// iOS 17
+- (instancetype)initWithIdentifier:(NSString*)identifier displayName:(NSString*)displayName iconImage:(UIImage*)iconImage iconBackgroundColor:(UIColor*)iconBackgroundColor
+{
+	return CCUISettingsModuleDescription_CCSInitHook(identifier, displayName, iconImage, ^(NSString *providedDisplayName, UIImage* providedIconImage) {
+		return %orig(identifier, providedDisplayName, providedIconImage, iconBackgroundColor);
+	});
 }
 
 %end
@@ -911,7 +924,7 @@ NSArray* g_mutableArrayPreventRemoval = nil;
 
 	if([fixedModuleIdentifiers containsObject:identifier] || [identifier isEqualToString:@"com.apple.FocusUIModule"])
 	{
-		MSHookIvar<NSString*>(moduleDescription, "_displayName") = localize(moduleDescription.displayName);
+		MSHookIvar<NSString*>(moduleDescription, "_displayName") = localize(MSHookIvar<NSString*>(moduleDescription, "_displayName"));
 	}
 
 	if([eccSelf.ccsp_additionalModuleIcons.allKeys containsObject:identifier])

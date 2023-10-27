@@ -54,6 +54,7 @@ enum
 @end
 
 @interface CCUISettingsModuleDescription : NSObject
+- (void)ccs_applyModificationsForIdentifier:(NSString*)identifier displayName:(NSString**)displayName iconImage:(UIImage**)iconImage;
 @property(readonly, copy, nonatomic) NSString *displayName;
 @end
 
