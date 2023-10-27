@@ -8,6 +8,7 @@
 @optional
 - (NSSet*)supportedDeviceFamiliesForModuleWithIdentifier:(NSString*)identifier;
 - (NSSet*)requiredDeviceCapabilitiesForModuleWithIdentifier:(NSString*)identifier;
+- (NSSet*)requiredDeviceIncapabilitiesForModuleWithIdentifier:(NSString*)identifier;
 - (NSString*)associatedBundleIdentifierForModuleWithIdentifier:(NSString*)identifier;
 - (NSString*)associatedBundleMinimumVersionForModuleWithIdentifier:(NSString*)identifier;
 - (NSUInteger)visibilityPreferenceForModuleWithIdentifier:(NSString*)identifier;

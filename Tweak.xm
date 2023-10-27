@@ -215,9 +215,12 @@ BOOL loadFixedModuleIdentifiers()
 
 - (CCSModuleMetadata*)_metadataForProvidedModuleWithIdentifier:(NSString*)identifier fromProvider:(NSObject<CCSModuleProvider>*)provider
 {
-	NSSet *supportedDeviceFamilies, *requiredDeviceCapabilities;
+	NSSet *supportedDeviceFamilies, *requiredDeviceCapabilities, *requiredDeviceIncapabilities;
 	NSString *associatedBundleIdentifier, *associatedBundleMinimumVersion;
 	NSUInteger visibilityPreference = 0;
+
+	// This was introduced in iOS 17.1
+	BOOL requiredDeviceIncapabilitiesSupported = [%c(CCSModuleMetadata) instancesRespondToSelector:@selector(_initWithModuleIdentifier:supportedDeviceFamilies:requiredDeviceCapabilities:requiredDeviceIncapabilities:associatedBundleIdentifier:associatedBundleMinimumVersion:visibilityPreference:moduleBundleURL:)];
 
 	if([provider respondsToSelector:@selector(supportedDeviceFamiliesForModuleWithIdentifier:)])
 	{
@@ -235,6 +238,9 @@ BOOL loadFixedModuleIdentifiers()
 	{
 		requiredDeviceCapabilities = [NSSet setWithObjects:@"arm64", nil];
 	}
+	if (requiredDeviceIncapabilitiesSupported && [provider respondsToSelector:@selector(requiredDeviceIncapabilitiesForModuleWithIdentifier:)]) {
+		requiredDeviceIncapabilities = [provider requiredDeviceIncapabilitiesForModuleWithIdentifier:identifier];
+	}
 	if([provider respondsToSelector:@selector(associatedBundleIdentifierForModuleWithIdentifier:)])
 	{
 		associatedBundleIdentifier = [provider associatedBundleIdentifierForModuleWithIdentifier:identifier];
@@ -250,7 +256,13 @@ BOOL loadFixedModuleIdentifiers()
 
 	NSBundle* bundle = [NSBundle bundleForClass:[provider class]];
 
-	CCSModuleMetadata* metadata = [[%c(CCSModuleMetadata) alloc] _initWithModuleIdentifier:identifier supportedDeviceFamilies:supportedDeviceFamilies requiredDeviceCapabilities:requiredDeviceCapabilities associatedBundleIdentifier:associatedBundleIdentifier associatedBundleMinimumVersion:associatedBundleMinimumVersion visibilityPreference:visibilityPreference moduleBundleURL:bundle.bundleURL];
+	CCSModuleMetadata* metadata;
+	if (requiredDeviceIncapabilitiesSupported) {
+		metadata = [[%c(CCSModuleMetadata) alloc] _initWithModuleIdentifier:identifier supportedDeviceFamilies:supportedDeviceFamilies requiredDeviceCapabilities:requiredDeviceCapabilities requiredDeviceIncapabilities:requiredDeviceIncapabilities associatedBundleIdentifier:associatedBundleIdentifier associatedBundleMinimumVersion:associatedBundleMinimumVersion visibilityPreference:visibilityPreference moduleBundleURL:bundle.bundleURL];
+	}
+	else {
+		metadata = [[%c(CCSModuleMetadata) alloc] _initWithModuleIdentifier:identifier supportedDeviceFamilies:supportedDeviceFamilies requiredDeviceCapabilities:requiredDeviceCapabilities associatedBundleIdentifier:associatedBundleIdentifier associatedBundleMinimumVersion:associatedBundleMinimumVersion visibilityPreference:visibilityPreference moduleBundleURL:bundle.bundleURL];
+	}
 
 	return metadata;
 }
