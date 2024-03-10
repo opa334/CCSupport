@@ -13,51 +13,48 @@ NSBundle* CCSupportBundle;
 
 - (NSUInteger)numberOfProvidedModules
 {
-	if(homeCCModuleBundle)
-	{
+	if (homeCCModuleBundle) {
 		return 1;
 	}
-	else
-	{
+	else {
 		return 0;
 	}
 }
 
-- (NSString*)identifierForModuleAtIndex:(NSUInteger)index
+- (NSString *)identifierForModuleAtIndex:(NSUInteger)index
 {
 	return @"com.opa334.CCSupport.Home.ControlCenter";
 }
 
-- (id)moduleInstanceForModuleIdentifier:(NSString*)identifier
+- (id)moduleInstanceForModuleIdentifier:(NSString *)identifier
 {
 	return [[NSClassFromString(@"CCSHPControlCenterModule") alloc] init];
 }
 
-- (NSString*)displayNameForModuleIdentifier:(NSString*)identifier
+- (NSString *)displayNameForModuleIdentifier:(NSString *)identifier
 {
 	return [CCSupportBundle localizedStringForKey:@"Home Controls" value:@"Home Controls" table:nil];
 }
 
-- (NSString*)associatedBundleIdentifierForModuleWithIdentifier:(NSString*)identifier
+- (NSString *)associatedBundleIdentifierForModuleWithIdentifier:(NSString *)identifier
 {
 	return @"com.apple.Home";
 }
 
-- (UIImage*)settingsIconForModuleIdentifier:(NSString*)identifier
+- (UIImage *)settingsIconForModuleIdentifier:(NSString *)identifier
 {
-	if(!_settingsIcon)
-	{
+	if (!_settingsIcon) {
 		_settingsIcon = [UIImage imageNamed:@"SettingsIcon" inBundle:homeCCModuleBundle compatibleWithTraitCollection:nil];
 	}
 	return _settingsIcon;
 }
 
-- (BOOL)providesListControllerForModuleIdentifier:(NSString*)identifier
+- (BOOL)providesListControllerForModuleIdentifier:(NSString *)identifier
 {
 	return YES;
 }
 
-- (id)listControllerForModuleIdentifier:(NSString*)identifier
+- (id)listControllerForModuleIdentifier:(NSString *)identifier
 {
 	return [[NSClassFromString(@"CCSHPPreferencesListController") alloc] init];
 }
@@ -70,12 +67,11 @@ extern void initHardCodedFixes();
 __attribute__((constructor))
 static void init(void)
 {
-	if (@available(iOS 14, *))
-	{
+	if (@available(iOS 14, *)) {
 		CCSupportBundle = [NSBundle bundleWithPath:CCSupportBundlePath];
 		homeCCModuleBundle = [NSBundle bundleWithPath:@"/System/Library/ControlCenter/Bundles/HomeControlCenterModule.bundle"];
 
-		if([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"])
+		if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"])
 		{
 			[homeCCModuleBundle load];
 
@@ -83,8 +79,7 @@ static void init(void)
 			initHardCodedFixes();
 		}
 	}
-	else
-	{
+	else {
 		homeCCModuleBundle = nil;
 		return;
 	}

@@ -12,12 +12,12 @@ typedef struct HUGridSize {
 } HUGridSize;
 
 @interface HFItemManager : NSObject
-@property (nonatomic,readonly) NSSet * allItems; 
-@property (nonatomic,readonly) NSSet * allDisplayedItems; 
+@property (nonatomic,readonly) NSSet *allItems; 
+@property (nonatomic,readonly) NSSet *allDisplayedItems; 
 - (instancetype)initWithDelegate:(id)arg1 sourceItem:(id)arg2;
-@property (nonatomic,retain) NSArray * itemProviders;
+@property (nonatomic,retain) NSArray *itemProviders;
 @property (assign,nonatomic) id<HFItemManagerDelegate> delegate;
-@property (nonatomic,retain) HFItem* sourceItem;
+@property (nonatomic,retain) HFItem *sourceItem;
 @end
 
 @interface HFItemProvider : NSObject
@@ -26,7 +26,7 @@ typedef struct HUGridSize {
 @interface HUCCPredictionsItemProvider : HFItemProvider
 - (instancetype)initWithHome:(id)arg1 predictionManager:(id)arg2 itemLimit:(NSUInteger)arg3;
 -(id)reloadItems;
-@property (nonatomic,retain) NSMutableSet * allItems;
+@property (nonatomic,retain) NSMutableSet *allItems;
 @end
 
 @interface HMHome : NSObject
@@ -49,11 +49,11 @@ typedef struct HUGridSize {
 @end
 
 @interface HMAccessory : NSObject <HFHomeKitObject>
-@property (nonatomic,copy) NSString * name;
+@property (nonatomic,copy) NSString *name;
 @end
 
 @interface HUGridCell : UICollectionViewCell
-@property (nonatomic,retain) HFItem * item;
+@property (nonatomic,retain) HFItem *item;
 @end
 
 @interface HMHomeManager : NSObject

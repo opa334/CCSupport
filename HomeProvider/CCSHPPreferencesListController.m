@@ -2,7 +2,7 @@
 
 #import <Preferences/PSSpecifier.h>
 
-extern NSBundle* CCSupportBundle;
+extern NSBundle *CCSupportBundle;
 
 @implementation CCSHPPreferencesListController
 
@@ -11,9 +11,9 @@ extern NSBundle* CCSupportBundle;
 	if(!_specifiers)
 	{
 		_specifiers = [self loadSpecifiersFromPlistName:@"HomeProviderPreferences" target:self];
-		for(PSSpecifier* specifier in _specifiers)
+		for(PSSpecifier *specifier in _specifiers)
 		{
-			NSString* label = specifier.properties[@"label"];
+			NSString *label = specifier.properties[@"label"];
 			specifier.name = [CCSupportBundle localizedStringForKey:label value:label table:nil];
 		}
 	}

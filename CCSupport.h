@@ -42,7 +42,7 @@ enum
 @end
 
 @interface CCUIModuleInstanceManager (CCSupport)
-- (CCUIModuleInstance*)instanceForModuleIdentifier:(NSString*)moduleIdentifier;
+- (CCUIModuleInstance *)instanceForModuleIdentifier:(NSString *)moduleIdentifier;
 @end
 
 @interface CCUIModuleSettings (CCSupport)
@@ -54,7 +54,7 @@ enum
 @end
 
 @interface CCUISettingsModuleDescription : NSObject
-- (void)ccs_applyModificationsForIdentifier:(NSString*)identifier displayName:(NSString**)displayName iconImage:(UIImage**)iconImage;
+- (void)ccs_applyModificationsForIdentifier:(NSString *)identifier displayName:(NSString* *)displayName iconImage:(UIImage* *)iconImage;
 @property(readonly, copy, nonatomic) NSString *displayName;
 @end
 
@@ -63,7 +63,7 @@ enum
 @end
 
 @interface CCSModuleRepository (CCSupport)
-- (NSArray*)ccshook_loadAllModuleMetadataWithOrig:(NSArray*)orig;
+- (NSArray *)ccshook_loadAllModuleMetadataWithOrig:(NSArray *)orig;
 @end
 
 
@@ -75,10 +75,10 @@ enum
 @property(nonatomic, retain) NSDictionary* preferenceClassForModuleIdentifiers; //NEW
 - (void)_repopulateModuleData;
 - (id)_identifierAtIndexPath:(id)arg1;
-- (UITableView*)ccs_getTableView;
+- (UITableView *)ccs_getTableView;
 - (void)ccs_unselectSelectedRow;
 - (void)ccs_resetButtonPressed;
-- (CCUISettingsModuleDescription*)_descriptionForIdentifier:(NSString*)identifier;
+- (CCUISettingsModuleDescription *)_descriptionForIdentifier:(NSString *)identifier;
 @end
 
 @interface CCUISettingsModulesController : UITableViewController <SettingsControllerSharedAcrossVersions>
@@ -96,16 +96,16 @@ enum
 + (instancetype)sharedInstance;
 - (void)_reloadProviders;
 - (void)_populateProviderToModuleCache;
-- (NSObject<CCSModuleProvider>*)_moduleProviderForModuleWithIdentifier:(NSString*)moduleIdentifier;
-- (CCSModuleMetadata*)_metadataForProvidedModuleWithIdentifier:(NSString*)identifier fromProvider:(NSObject<CCSModuleProvider>*)provider;
-- (NSMutableSet*)_allProvidedModuleIdentifiers;
-- (BOOL)doesProvideModule:(NSString*)moduleIdentifier;
-- (NSMutableArray*)metadataForAllProvidedModules;
-- (id)moduleInstanceForModuleIdentifier:(NSString*)identifier;
-- (BOOL)providesListControllerForModuleIdentifier:(NSString*)identifier;
-- (id)listControllerForModuleIdentifier:(NSString*)identifier;
-- (NSString*)displayNameForModuleIdentifier:(NSString*)identifier;
-- (UIImage*)settingsIconForModuleIdentifier:(NSString*)identifier;
+- (NSObject<CCSModuleProvider> *)_moduleProviderForModuleWithIdentifier:(NSString *)moduleIdentifier;
+- (CCSModuleMetadata *)_metadataForProvidedModuleWithIdentifier:(NSString *)identifier fromProvider:(NSObject<CCSModuleProvider> *)provider;
+- (NSMutableSet *)_allProvidedModuleIdentifiers;
+- (BOOL)doesProvideModule:(NSString *)moduleIdentifier;
+- (NSMutableArray *)metadataForAllProvidedModules;
+- (id)moduleInstanceForModuleIdentifier:(NSString *)identifier;
+- (BOOL)providesListControllerForModuleIdentifier:(NSString *)identifier;
+- (id)listControllerForModuleIdentifier:(NSString *)identifier;
+- (NSString *)displayNameForModuleIdentifier:(NSString *)identifier;
+- (UIImage *)settingsIconForModuleIdentifier:(NSString *)identifier;
 - (void)reload;
 @end
 
@@ -113,6 +113,6 @@ enum
 @end
 
 @interface NSValue (ControlCenterUI)
-+ (NSValue*)ccui_valueWithLayoutSize:(CCUILayoutSize)layoutSize;
++ (NSValue *)ccui_valueWithLayoutSize:(CCUILayoutSize)layoutSize;
 - (CCUILayoutSize)ccui_sizeValue;
 @end

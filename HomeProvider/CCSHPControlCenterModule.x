@@ -10,49 +10,39 @@
 
 	NSDictionary* preferences = [[NSUserDefaults standardUserDefaults] persistentDomainForName:@"com.opa334.CCSupport.HomeControlsPrefs"];
 
-	if(orientation == 0)
-	{
+	if (orientation == 0) {
 		NSNumber* widthNum = [preferences objectForKey:@"PortraitWidth"];
 		NSNumber* heightNum = [preferences objectForKey:@"PortraitHeight"];
 
-		if(widthNum)
-		{
+		if (widthNum) {
 			size.width = [widthNum unsignedLongLongValue];
 		}
-		else
-		{
+		else {
 			size.width = 4;
 		}
 
-		if(heightNum)
-		{
+		if (heightNum) {
 			size.height = [heightNum unsignedLongLongValue];
 		}
-		else
-		{
+		else {
 			size.height = 2;
 		}
 	}
-	else
-	{
+	else {
 		NSNumber* widthNum = [preferences objectForKey:@"LandscapeWidth"];
 		NSNumber* heightNum = [preferences objectForKey:@"LandscapeHeight"];
 
-		if(widthNum)
-		{
+		if (widthNum) {
 			size.width = [widthNum unsignedLongLongValue];
 		}
-		else
-		{
+		else {
 			size.width = 2;
 		}
 
-		if(heightNum)
-		{
+		if (heightNum) {
 			size.height = [heightNum unsignedLongLongValue];
 		}
-		else
-		{
+		else {
 			size.height = 3;
 		}
 	}

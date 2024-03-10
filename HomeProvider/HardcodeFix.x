@@ -6,12 +6,11 @@
 
 BOOL ccs_shouldSpoofOnceAsHomeControlCenter = NO;
 
-- (NSString*)moduleIdentifier
+- (NSString *)moduleIdentifier
 {
-	NSString* orig = %orig;
+	NSString *orig = %orig;
 
-	if(ccs_shouldSpoofOnceAsHomeControlCenter && orig)
-	{
+	if(ccs_shouldSpoofOnceAsHomeControlCenter && orig){ 
 		ccs_shouldSpoofOnceAsHomeControlCenter = NO;
 		return @"com.apple.Home.ControlCenter";
 	}
@@ -21,15 +20,13 @@ BOOL ccs_shouldSpoofOnceAsHomeControlCenter = NO;
 
 - (void)expandModule
 {
-	NSString* orgModuleIdentifier = self.moduleIdentifier;
-	if([orgModuleIdentifier isEqualToString:@"com.opa334.CCSupport.Home.ControlCenter"])
-	{
+	NSString *orgModuleIdentifier = self.moduleIdentifier;
+	if([orgModuleIdentifier isEqualToString:@"com.opa334.CCSupport.Home.ControlCenter"]){ 
 		ccs_shouldSpoofOnceAsHomeControlCenter = YES;
 		%orig;
 		ccs_shouldSpoofOnceAsHomeControlCenter = NO;
 	}
-	else
-	{
+	else{ 
 		%orig;
 	}
 }
