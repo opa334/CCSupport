@@ -5,10 +5,6 @@
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 
-#ifndef kCFCoreFoundationVersionNumber_iOS_16_0
-#define kCFCoreFoundationVersionNumber_iOS_16_0 1932.101
-#endif
-
 NSArray *fixedModuleIdentifiers; // Identifiers of (normally) fixed modules
 NSBundle *CCSupportBundle; // Bundle for icons and localization (only needed / initialized in settings)
 NSDictionary *englishLocalizations; // English localizations for fallback
