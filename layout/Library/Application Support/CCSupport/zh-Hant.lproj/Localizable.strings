@@ -4,14 +4,14 @@
 "OrientationLockModule" = "螢幕旋轉鎖定";
 "AudioModule" = "音量";
 "DisplayModule" = "亮度";
-"Screen Mirroring" = "鏡像輸出";
+"Screen Mirroring" = "螢幕鏡像輸出";
 "FocusUIModule" = "專注模式";
 
 "Home Controls" = "家庭控制";
 "Portrait Height" = "直立時模組高度";
 "Portrait Width" = "直立時模組寬度";
-"Landscape Height" = "橫放時模組高度";
-"Landscape Width" = "橫放時模組寬度";
+"Landscape Height" = "橫向時模組高度";
+"Landscape Width" = "橫向時模組寬度";
 
 "HOME_CONTROLS_NOTICE" = "此選項已停用，因為CCSupport已將家庭控制整合到下方的項目中，您可以調整它的大小並將其放置在任何您喜歡的位置。";
 "RESET_MODULES" = "重置模組";
