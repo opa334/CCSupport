@@ -15,7 +15,7 @@
 
 "HOME_CONTROLS_NOTICE" = "此選項已停用，因為CCSupport已將家庭控制整合到下方的項目中，您可以調整它的大小並將其放置在任何您喜歡的位置。";
 "RESET_MODULES" = "重置模組";
-"RESET_MODULES_DESCRIPTION" = "CCSupport 將模組設定檔重新導向到另一個路徑。因此，模組設定檔在載入插體時和未載入時（例如在安全模式下或未越獄時）是分開的。您想要重置哪個模組設定檔？";
+"RESET_MODULES_DESCRIPTION" = "CCSupport 將模組設定檔重新導向到另一個路徑。因此，模組設定檔在載入外掛時和未載入時（例如在安全模式下或未越獄時）是分開的。您想要重置哪個模組設定檔？";
 "RESET_DEFAULT_CONFIGURATION" = "重置預設設定";
 "RESET_CCSUPPORT_CONFIGURATION" = "重置 CCSupport 設定";
 "RESET_BOTH_CONFIGURATIONS" = "兩者都重置";
