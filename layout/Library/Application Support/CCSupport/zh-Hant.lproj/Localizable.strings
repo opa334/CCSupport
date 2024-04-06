@@ -1,27 +1,27 @@
-"ConnectivityModule" = "連接";
+"ConnectivityModule" = "通訊";
 "MediaControlsModule" = "播放控制";
 "DoNotDisturbModule" = "勿擾模式";
 "OrientationLockModule" = "螢幕旋轉鎖定";
 "AudioModule" = "音量";
 "DisplayModule" = "亮度";
-"Screen Mirroring" = "屏幕鏡像";
+"Screen Mirroring" = "螢幕鏡像輸出";
+"FocusUIModule" = "專注模式";
 
 "Home Controls" = "家庭控制";
-"Portrait Height" = "豎屏時模組高度";
-"Portrait Width" = "豎屏時模組寬度";
-"Landscape Height" = "橫屏時模組高度";
-"Landscape Width" = "橫屏時模組寬度";
+"Portrait Height" = "直立時模組高度";
+"Portrait Width" = "直立時模組寬度";
+"Landscape Height" = "橫向時模組高度";
+"Landscape Width" = "橫向時模組寬度";
 
-"HOME_CONTROLS_NOTICE" = "該選項已禁用\nCCSupport 已將家庭控制綜合到了下方的清單中，您可以調整它的大小並將其放置在您喜歡的任何位置。";
+"HOME_CONTROLS_NOTICE" = "此選項已停用，因為CCSupport已將家庭控制整合到下方的項目中，您可以調整它的大小並將其放置在任何您喜歡的位置。";
 "RESET_MODULES" = "重置模組";
-"RESET_MODULES_DESCRIPTION" = "CCSupport 把模組設定檔指向了另一個路徑。因此模組設定檔在此插件運行時與未運行時（比如處於安全模式或者未越獄狀態下）是分開的。您打算重置哪個設定檔呢？";
-"RESET_DEFAULT_CONFIGURATION" = "重置系統自帶的設定";
+"RESET_MODULES_DESCRIPTION" = "CCSupport 將模組設定檔重新導向到另一個路徑。因此，模組設定檔在載入外掛時和未載入時（例如在安全模式下或未越獄時）是分開的。您想要重置哪個模組設定檔？";
+"RESET_DEFAULT_CONFIGURATION" = "重置預設設定";
 "RESET_CCSUPPORT_CONFIGURATION" = "重置 CCSupport 設定";
-"RESET_BOTH_CONFIGURATIONS" = "重置這兩個設定";
+"RESET_BOTH_CONFIGURATIONS" = "兩者都重置";
 "CANCEL" = "取消";
 
 "SAFETY_TITLE" = "安全警告";
-"SAFETY_MESSAGE" = "CCSupport 因系統文檔被修改而無法載入。我另外開發了一個名爲 CCCleaner 的工具，可以清理受損的文件。點擊“打開”了解更多。";
+"SAFETY_MESSAGE" = "CCSupport由於系統檔案進行了修改而未載入。我開發了一個名為 CCCleaner 的工具，可以修復它們，點擊「開啟」以了解更多資訊。";
 "SAFETY_BUTTON_CLOSE" = "關閉";
 "SAFETY_BUTTON_OPEN" = "打開";
-
