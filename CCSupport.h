@@ -116,3 +116,18 @@ enum
 + (NSValue *)ccui_valueWithLayoutSize:(CCUILayoutSize)layoutSize;
 - (CCUILayoutSize)ccui_sizeValue;
 @end
+
+@interface SBLeafIcon : NSObject
+@property (readonly, copy, nonatomic) NSString *applicationBundleID;
+@end
+
+@interface SBHApplicationWidgetCollection : NSObject
+@property (readonly, nonatomic) SBLeafIcon *icon;
+@property (copy, nonatomic) NSArray *widgetDescriptors;
+@property (readonly, copy, nonatomic) NSString *vendorName;
+- (instancetype)initWithIcon:(SBLeafIcon *)icon galleryItems:(NSArray *)galleryItems vendorName:(NSString *)vendorName;
+@end
+
+@interface CCUIModuleIconElement : NSObject
+@property (nonatomic, readonly) NSString *moduleIdentifier;
+@end
