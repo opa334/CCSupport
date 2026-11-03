@@ -1199,6 +1199,72 @@ CCUISettingsModuleDescription *CCUISettingsModuleDescription_CCSInitHook(NSStrin
 
 %end
 
+%group ControlCenterGallery_iOS18
+
+// The controls gallery creates one collection per legacy module and uses the module's associated app as its icon,
+// third party modules have none so every one of them ends up in its own "SpringBoard" section.
+// Merge the collections of all modules loaded by CCSupport into a single section.
+%hook CCUIPagingViewController
+
+- (NSArray *)customApplicationWidgetCollectionsForControlsGalleryViewController:(id)controller
+{
+	NSArray *collections = %orig;
+
+	NSMutableSet *thirdPartyModuleIdentifiers = [NSMutableSet new];
+	NSArray<NSURL *> *bundleURLs = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:CCSupportModulesPath isDirectory:YES] includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
+	for (NSURL *bundleURL in bundleURLs) {
+		NSString *bundleIdentifier = [NSBundle bundleWithURL:bundleURL].bundleIdentifier;
+		if (bundleIdentifier) {
+			[thirdPartyModuleIdentifiers addObject:bundleIdentifier];
+		}
+	}
+
+	CCSModuleProviderManager *providerManager = [CCSModuleProviderManager sharedInstance];
+
+	NSMutableArray *mergedCollections = [NSMutableArray new];
+	NSMutableArray *thirdPartyCollections = [NSMutableArray new];
+	NSMutableArray *thirdPartyGalleryItems = [NSMutableArray new];
+	NSUInteger thirdPartyIndex = NSNotFound;
+
+	for (SBHApplicationWidgetCollection *collection in collections) {
+		BOOL isThirdParty = collection.widgetDescriptors.count > 0;
+		for (CCUIModuleIconElement *element in collection.widgetDescriptors) {
+			NSString *moduleIdentifier = [element respondsToSelector:@selector(moduleIdentifier)] ? element.moduleIdentifier : nil;
+			if (!moduleIdentifier || (![thirdPartyModuleIdentifiers containsObject:moduleIdentifier] && ![providerManager doesProvideModule:moduleIdentifier])) {
+				isThirdParty = NO;
+				break;
+			}
+		}
+
+		if (isThirdParty) {
+			if (thirdPartyIndex == NSNotFound) {
+				thirdPartyIndex = mergedCollections.count;
+			}
+			[thirdPartyCollections addObject:collection];
+			[thirdPartyGalleryItems addObjectsFromArray:collection.widgetDescriptors];
+		}
+		else {
+			[mergedCollections addObject:collection];
+		}
+	}
+
+	if (thirdPartyCollections.count < 2) {
+		return collections;
+	}
+
+	SBHApplicationWidgetCollection *first = thirdPartyCollections.firstObject;
+	SBHApplicationWidgetCollection *merged = [[%c(SBHApplicationWidgetCollection) alloc] initWithIcon:first.icon galleryItems:thirdPartyGalleryItems vendorName:first.vendorName];
+	if (!merged) {
+		return collections;
+	}
+
+	[mergedCollections insertObject:merged atIndex:thirdPartyIndex];
+	return mergedCollections;
+}
+
+%end
+%end
+
 %group safetyChecksFailed
 %hook SBHomeScreenViewController
 
@@ -1320,6 +1386,10 @@ static void bundleLoaded(CFNotificationCenterRef center, void *observer, CFStrin
 
 	if (isSpringBoard) {
 		if (!loadFixedModuleIdentifiers()) {
+			// iOS 18+ uses the controls gallery for adding modules
+			if (@available(iOS 18.0, *)) {
+				%init(ControlCenterGallery_iOS18);
+			}
 			initControlCenterUIHooks();
 			initControlCenterServicesHooks();
 
